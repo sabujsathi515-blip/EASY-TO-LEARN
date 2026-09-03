@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="128" fill="url(#grad1)" />
+  <circle cx="410" cy="110" r="45" fill="url(#gold)" opacity="0.9" />
+  
+  <!-- Star in the gold circle -->
+  <polygon points="410,85 417,102 435,103 420,115 426,132 410,121 394,132 400,115 385,103 403,102" fill="#ffffff" />
+  
+  <!-- Graduation Cap -->
+  <polygon points="256,90 380,148 256,206 132,148" fill="#ffffff" />
+  <polygon points="340,166 340,210 256,250 172,210 172,166 256,206" fill="#e2e8f0" />
+  <path d="M380,148 L395,200 L390,235" stroke="#fde047" stroke-width="8" stroke-linecap="round" fill="none" />
+  <circle cx="390" cy="242" r="8" fill="#fde047" />
+
+  <!-- Open Book -->
+  <g transform="translate(0, 30)">
+    <!-- Left page -->
+    <path d="M 256,270 C 210,240 140,240 80,260 L 80,390 C 140,370 210,370 256,400 Z" fill="#ffffff" opacity="0.95" />
+    <!-- Right page -->
+    <path d="M 256,270 C 302,240 372,240 432,260 L 432,390 C 372,370 302,370 256,400 Z" fill="#f8fafc" />
+    <!-- Book spine / divider -->
+    <path d="M 256,270 L 256,400" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round" />
+    <!-- Page lines left -->
+    <line x1="115" y1="290" x2="225" y2="290" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+    <line x1="115" y1="315" x2="225" y2="315" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+    <line x1="115" y1="340" x2="195" y2="340" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+    <!-- Page lines right -->
+    <line x1="287" y1="290" x2="397" y2="290" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+    <line x1="287" y1="315" x2="397" y2="315" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+    <line x1="287" y1="340" x2="367" y2="340" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+  </g>
+  
+  <!-- Subtle brand text -->
+  <text x="256" y="465" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="34" fill="#ffffff" text-anchor="middle" letter-spacing="4">EASY TO LEARN</text>
+</svg>

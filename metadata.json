@@ -1,0 +1,6 @@
+{
+  "name": "EASY TO LEARN",
+  "description": "Complete Education Management & Study Web App for Classes 1 to 10 with read-only study materials, notes, question papers, homework, and coaching administration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

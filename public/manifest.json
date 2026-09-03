@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "EASY TO LEARN",
+  "short_name": "EasyToLearn",
+  "description": "Complete Education Management & Study Web App for Classes 1 to 10 with read-only study materials, notes, and coaching tools.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "categories": ["education", "books", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
