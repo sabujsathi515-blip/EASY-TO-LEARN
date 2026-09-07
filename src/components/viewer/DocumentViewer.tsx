@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
+  ArrowLeft,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -21,7 +22,7 @@ import { useApp } from '../../context/AppContext';
 import { StudyMaterial } from '../../types';
 
 export const DocumentViewer: React.FC = () => {
-  const { activeDocument, closeDocumentViewer, language, t, showToast } = useApp();
+  const { activeDocument, closeDocumentViewer, language, t, showToast, settings } = useApp();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -155,6 +156,16 @@ export const DocumentViewer: React.FC = () => {
       <div className="bg-slate-900 text-white border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
         {/* Left info */}
         <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={closeDocumentViewer}
+            title={language === 'bn' ? 'ফিরে যান' : 'Back to library'}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition shrink-0 group shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="hidden sm:inline">{language === 'bn' ? 'পেছনে যান' : 'Back'}</span>
+          </button>
+
           <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-xs">
             {activeDocument.format === 'pdf' ? (
               <FileText className="w-5 h-5" />
@@ -379,16 +390,37 @@ export const DocumentViewer: React.FC = () => {
 
           {/* Document Body Content */}
           <div className="space-y-6 text-sm sm:text-base leading-relaxed font-sans">
+            {/* Uploaded File (Image or PDF) Preview */}
+            {activeDocument.fileUrl && (activeDocument.format === 'image' || activeDocument.fileUrl.startsWith('data:image/')) && (
+              <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex justify-center p-2">
+                <img
+                  src={activeDocument.fileUrl}
+                  alt={activeDocument.title}
+                  className="max-h-[700px] w-auto max-w-full object-contain rounded-lg shadow-sm"
+                />
+              </div>
+            )}
+
+            {activeDocument.fileUrl && activeDocument.format === 'pdf' && (
+              <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-900">
+                <iframe
+                  src={activeDocument.fileUrl}
+                  title={activeDocument.title}
+                  className="w-full h-[650px] rounded-lg border-0"
+                />
+              </div>
+            )}
+
             {currentPageData?.content ? (
               <div className="whitespace-pre-wrap font-sans">
                 {renderHighlightedText(currentPageData.content)}
               </div>
-            ) : (
+            ) : !activeDocument.fileUrl ? (
               <div className="py-12 text-center opacity-60">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>Protected document page rendered for student study session.</p>
               </div>
-            )}
+            ) : null}
 
             {/* Key Formulas or Equations Box if available */}
             {currentPageData?.keyFormulas && currentPageData.keyFormulas.length > 0 && (
@@ -445,7 +477,7 @@ export const DocumentViewer: React.FC = () => {
           {/* Document Footer */}
           <div className="mt-12 pt-4 border-t border-current/15 flex flex-wrap items-center justify-between text-xs opacity-60">
             <div>
-              <span>Faculty: {activeDocument.author || 'Sabuj Sathi Sir'}</span>
+              <span>Faculty: {activeDocument.author || settings.teacherName || 'Milton Sir'}</span>
               <span className="mx-2">•</span>
               <span>Updated: {activeDocument.uploadDate}</span>
             </div>

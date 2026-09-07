@@ -107,11 +107,11 @@ export interface StudyMaterial {
   title: string;
   titleBn?: string;
   category: MaterialCategory;
-  format: 'pdf' | 'rich_notes' | 'worksheet' | 'notes';
+  format: 'pdf' | 'rich_notes' | 'worksheet' | 'notes' | 'image';
   description?: string;
   totalPages?: number;
   pages?: MaterialPage[];
-  fileUrl?: string; // base64 or blob if uploaded
+  fileUrl?: string; // base64, blob or direct url for PDF/Image
   fileName?: string;
   fileSize?: string;
   uploadDate: string;
@@ -241,4 +241,36 @@ export interface AppSettings {
   language?: Language;
   philosophy?: string;
   messageToStudents?: string;
+}
+
+export interface TextBookChapter {
+  chapterNo: number;
+  title: string;
+  titleBn: string;
+  pageRange?: string;
+  summary?: string;
+  summaryBn?: string;
+}
+
+export interface TextBook {
+  id: string;
+  classId: number; // 1 to 10
+  title: string;
+  titleBn: string;
+  subject: string;
+  subjectBn: string;
+  category: 'language' | 'science' | 'mathematics' | 'social_science' | 'supplementary' | 'general';
+  board: 'WBBSE' | 'WBBPE';
+  publisher: string;
+  publisherBn: string;
+  edition: string;
+  academicYear: string;
+  coverColor: string;
+  description: string;
+  descriptionBn: string;
+  totalChapters: number;
+  totalPages: number;
+  officialPortalUrl?: string;
+  chapters: TextBookChapter[];
+  pages: MaterialPage[];
 }

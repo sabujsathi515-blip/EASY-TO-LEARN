@@ -17,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export const StudentPortal: React.FC = () => {
   const {
@@ -45,6 +46,9 @@ export const StudentPortal: React.FC = () => {
   if (!student) {
     return (
       <div className="py-16 text-center max-w-md mx-auto px-4 space-y-4">
+        <div className="flex justify-start mb-2">
+          <BackButton showHomeShortcut />
+        </div>
         <GraduationCap className="w-16 h-16 mx-auto text-blue-500 opacity-60" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Student Login Required</h2>
         <p className="text-xs text-slate-500">
@@ -94,6 +98,11 @@ export const StudentPortal: React.FC = () => {
 
   return (
     <div className="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center justify-between">
+        <BackButton showHomeShortcut />
+      </div>
+
       {/* Student Profile Header Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 text-center sm:text-left">

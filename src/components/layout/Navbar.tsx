@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Book,
   BookOpen,
   Calendar,
   FileText,
@@ -42,7 +43,7 @@ export const Navbar: React.FC = () => {
   };
 
   const handleWhatsAppTeacher = () => {
-    const cleanNumber = (settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+    const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
     const msg = encodeURIComponent('Hello EASY TO LEARN, I would like guidance on study materials & admissions.');
     window.open(`https://wa.me/${cleanNumber}?text=${msg}`, '_blank');
   };
@@ -50,6 +51,7 @@ export const Navbar: React.FC = () => {
   const navItems = [
     { id: 'home', label: t.home, icon: Home },
     { id: 'classes', label: t.classes, icon: GraduationCap },
+    { id: 'books', label: t.books, icon: Book },
     { id: 'materials', label: t.studyMaterials, icon: BookOpen },
     { id: 'notices', label: t.notices, icon: Calendar },
     { id: 'homework', label: t.homework, icon: FileText },

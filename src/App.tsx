@@ -4,6 +4,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
 import { ClassSection } from './components/classes/ClassSection';
+import { TextBookSection } from './components/books/TextBookSection';
 import { StudyMaterialsSection } from './components/materials/StudyMaterialsSection';
 import { NoticeBoardSection } from './components/notices/NoticeBoardSection';
 import { HomeworkSection } from './components/homework/HomeworkSection';
@@ -12,6 +13,7 @@ import { TeacherProfileSection } from './components/teacher/TeacherProfileSectio
 import { StudentPortal } from './components/student/StudentPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { DocumentViewer } from './components/viewer/DocumentViewer';
+import { PageNavigationHeader } from './components/common/PageNavigationHeader';
 import { SearchModal } from './components/common/SearchModal';
 import { LoginModal } from './components/common/LoginModal';
 import { FloatingWhatsApp } from './components/common/FloatingWhatsApp';
@@ -25,10 +27,14 @@ const MainLayout: React.FC = () => {
       {/* Navigation Bar */}
       <Navbar />
 
+      {/* Universal Back Navigation Bar across all pages */}
+      <PageNavigationHeader />
+
       {/* Main Content View Switcher */}
       <main className="flex-1">
         {currentView === 'home' && <HomePage />}
         {currentView === 'classes' && <ClassSection />}
+        {currentView === 'books' && <TextBookSection />}
         {currentView === 'materials' && <StudyMaterialsSection />}
         {currentView === 'notices' && <NoticeBoardSection />}
         {currentView === 'homework' && <HomeworkSection />}

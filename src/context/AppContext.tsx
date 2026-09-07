@@ -58,6 +58,9 @@ interface AppContextType {
   // Navigation & State
   currentView: string;
   setCurrentView: (view: string) => void;
+  goBack: () => void;
+  canGoBack: boolean;
+  navigationHistory: string[];
   selectedClassId: number;
   setSelectedClassId: (id: number) => void;
   selectedSubjectId: string | null;
@@ -76,7 +79,7 @@ interface AppContextType {
 
   // Auth
   currentUser: CurrentUser;
-  loginAsAdmin: (password: string) => boolean;
+  loginAsAdmin: (password: string, username?: string) => boolean;
   loginAsStudent: (studentIdOrMobile: string, password: string) => boolean;
   loginQuickStudent: (student: StudentProfile) => void;
   logout: () => void;
@@ -101,16 +104,20 @@ interface AppContextType {
 
   // Subject & Chapter Management
   addSubject: (subj: Omit<Subject, 'id'>) => void;
+  updateSubject: (id: string, subj: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
   addChapter: (chap: Omit<Chapter, 'id'>) => void;
+  updateChapter: (id: string, chap: Partial<Chapter>) => void;
   deleteChapter: (id: string) => void;
 
   // Notice Management
   addNotice: (notice: Omit<Notice, 'id' | 'date'>) => void;
+  updateNotice: (id: string, notice: Partial<Notice>) => void;
   deleteNotice: (id: string) => void;
 
   // Homework Management
   addHomework: (hw: Omit<HomeworkItem, 'id' | 'assignedDate'>) => void;
+  updateHomework: (id: string, hw: Partial<HomeworkItem>) => void;
   deleteHomework: (id: string) => void;
 
   // Student Management
@@ -120,9 +127,20 @@ interface AppContextType {
 
   // Attendance & Fees & Marks
   recordAttendance: (record: Omit<AttendanceRecord, 'id'>) => void;
+  updateAttendance: (id: string, record: Partial<AttendanceRecord>) => void;
+  deleteAttendance: (id: string) => void;
+
   recordFeePayment: (fee: Omit<FeeRecord, 'id'>) => void;
+  updateFeeRecord: (id: string, fee: Partial<FeeRecord>) => void;
+  deleteFeeRecord: (id: string) => void;
+
   addExam: (exam: Omit<Exam, 'id'>) => void;
+  updateExam: (id: string, exam: Partial<Exam>) => void;
+  deleteExam: (id: string) => void;
+
   enterStudentMark: (mark: Omit<StudentMark, 'id'>) => void;
+  updateMark: (id: string, mark: Partial<StudentMark>) => void;
+  deleteMark: (id: string) => void;
 
   // Feedback Toast
   showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
@@ -161,11 +179,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Settings
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+    if (!saved) return INITIAL_SETTINGS;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.teacherName === 'Sabuj Sathi Sir' || !parsed.teacherName) {
+        parsed.teacherName = 'Milton Sir';
+      }
+      if (parsed.whatsappNumber === '+919876543210' || !parsed.whatsappNumber) {
+        parsed.whatsappNumber = '+917384491269';
+      }
+      if (parsed.contactNumber === '+91 98765 43210' || !parsed.contactNumber) {
+        parsed.contactNumber = '+91 73844 91269';
+      }
+      return { ...INITIAL_SETTINGS, ...parsed };
+    } catch {
+      return INITIAL_SETTINGS;
+    }
   });
 
   // Navigation states
-  const [currentView, setCurrentView] = useState<string>('home');
+  const [currentView, setCurrentViewState] = useState<string>('home');
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home']);
+
+  const setCurrentView = (view: string) => {
+    if (view === currentView) return;
+    try {
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ view }, '', `#${view}`);
+      }
+    } catch {
+      // In sandboxed iframes pushState might be restricted
+    }
+    setNavigationHistory((prev) => {
+      if (prev[prev.length - 1] === view) return prev;
+      return [...prev, view];
+    });
+    setCurrentViewState(view);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goBack = () => {
+    if (activeDocument) {
+      setActiveDocument(null);
+      return;
+    }
+    setNavigationHistory((prev) => {
+      if (prev.length > 1) {
+        const nextHistory = prev.slice(0, -1);
+        const previousView = nextHistory[nextHistory.length - 1] || 'home';
+        setCurrentViewState(previousView);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return nextHistory;
+      } else {
+        setCurrentViewState('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return ['home'];
+      }
+    });
+  };
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.view) {
+        setCurrentViewState(event.state.view);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const canGoBack = currentView !== 'home' || navigationHistory.length > 1;
+
   const [selectedClassId, setSelectedClassId] = useState<number>(10);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
@@ -331,8 +415,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Auth methods
-  const loginAsAdmin = (password: string): boolean => {
-    if (password === 'admin123' || password === 'admin') {
+  const loginAsAdmin = (password: string, username: string = 'EASY TO LEARN'): boolean => {
+    const cleanUser = (username || '').trim().toUpperCase();
+    const cleanPass = (password || '').trim();
+    const validUsers = ['EASY TO LEARN', 'ADMIN', 'EASYTOLEARN', 'TEACHER'];
+    const validPass = ['909311', 'ADMIN123', 'ADMIN'];
+
+    if (validUsers.includes(cleanUser) && (validPass.includes(cleanPass) || validPass.includes(cleanPass.toUpperCase()))) {
       const user: CurrentUser = { role: 'admin', adminName: settings.teacherName };
       setCurrentUser(user);
       setIsLoginOpen(false);
@@ -340,7 +429,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast(`Welcome back, ${settings.teacherName} (Admin)`, 'success');
       return true;
     }
-    showToast('Invalid admin password. Default demo is admin123', 'error');
+    showToast('Invalid credentials. Default User ID: EASY TO LEARN, Password: 6-digit PIN', 'error');
     return false;
   };
 
@@ -419,6 +508,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Subject ${subj.name} added`, 'success');
   };
 
+  const updateSubject = (id: string, subj: Partial<Subject>) => {
+    setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, ...subj } : s)));
+    showToast('Subject updated successfully', 'success');
+  };
+
   const deleteSubject = (id: string) => {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
     showToast('Subject deleted', 'info');
@@ -428,6 +522,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const id = `ch-${Date.now().toString().slice(-6)}`;
     setChapters((prev) => [...prev, { ...chap, id }]);
     showToast(`Chapter ${chap.chapterNo} added`, 'success');
+  };
+
+  const updateChapter = (id: string, chap: Partial<Chapter>) => {
+    setChapters((prev) => prev.map((c) => (c.id === id ? { ...c, ...chap } : c)));
+    showToast('Chapter updated successfully', 'success');
   };
 
   const deleteChapter = (id: string) => {
@@ -445,6 +544,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Notice published on board', 'success');
   };
 
+  const updateNotice = (id: string, notice: Partial<Notice>) => {
+    setNotices((prev) => prev.map((n) => (n.id === id ? { ...n, ...notice } : n)));
+    showToast('Notice updated successfully', 'success');
+  };
+
   const deleteNotice = (id: string) => {
     setNotices((prev) => prev.filter((n) => n.id !== id));
     showToast('Notice removed', 'info');
@@ -459,6 +563,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setHomeworkList((prev) => [newHw, ...prev]);
     showToast('Homework assigned to class', 'success');
+  };
+
+  const updateHomework = (id: string, hw: Partial<HomeworkItem>) => {
+    setHomeworkList((prev) => prev.map((h) => (h.id === id ? { ...h, ...hw } : h)));
+    showToast('Homework updated successfully', 'success');
   };
 
   const deleteHomework = (id: string) => {
@@ -491,10 +600,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Attendance marked as ${record.status}`, 'success');
   };
 
+  const updateAttendance = (id: string, record: Partial<AttendanceRecord>) => {
+    setAttendance((prev) => prev.map((a) => (a.id === id ? { ...a, ...record } : a)));
+    showToast('Attendance record updated', 'success');
+  };
+
+  const deleteAttendance = (id: string) => {
+    setAttendance((prev) => prev.filter((a) => a.id !== id));
+    showToast('Attendance record deleted', 'info');
+  };
+
   const recordFeePayment = (fee: Omit<FeeRecord, 'id'>) => {
     const id = `fee-${Date.now()}`;
     setFees((prev) => [{ ...fee, id }, ...prev]);
     showToast(`Payment of ₹${fee.paidAmount} recorded`, 'success');
+  };
+
+  const updateFeeRecord = (id: string, fee: Partial<FeeRecord>) => {
+    setFees((prev) => prev.map((f) => (f.id === id ? { ...f, ...fee } : f)));
+    showToast('Fee payment record updated', 'success');
+  };
+
+  const deleteFeeRecord = (id: string) => {
+    setFees((prev) => prev.filter((f) => f.id !== id));
+    showToast('Fee record deleted', 'info');
   };
 
   const addExam = (exam: Omit<Exam, 'id'>) => {
@@ -503,10 +632,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Exam ${exam.name} scheduled`, 'success');
   };
 
+  const updateExam = (id: string, exam: Partial<Exam>) => {
+    setExams((prev) => prev.map((e) => (e.id === id ? { ...e, ...exam } : e)));
+    showToast('Exam schedule updated', 'success');
+  };
+
+  const deleteExam = (id: string) => {
+    setExams((prev) => prev.filter((e) => e.id !== id));
+    showToast('Exam deleted', 'info');
+  };
+
   const enterStudentMark = (mark: Omit<StudentMark, 'id'>) => {
     const id = `mrk-${Date.now()}`;
     setMarks((prev) => [{ ...mark, id }, ...prev]);
     showToast(`Marks recorded for ${mark.studentName}`, 'success');
+  };
+
+  const updateMark = (id: string, mark: Partial<StudentMark>) => {
+    setMarks((prev) => prev.map((m) => (m.id === id ? { ...m, ...mark } : m)));
+    showToast('Student marks updated', 'success');
+  };
+
+  const deleteMark = (id: string) => {
+    setMarks((prev) => prev.filter((m) => m.id !== id));
+    showToast('Student mark entry deleted', 'info');
   };
 
   const t = translations[language] || translations.en;
@@ -524,6 +673,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAllData,
         currentView,
         setCurrentView,
+        goBack,
+        canGoBack,
+        navigationHistory,
         selectedClassId,
         setSelectedClassId,
         selectedSubjectId,
@@ -557,20 +709,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStudyMaterial,
         deleteStudyMaterial,
         addSubject,
+        updateSubject,
         deleteSubject,
         addChapter,
+        updateChapter,
         deleteChapter,
         addNotice,
+        updateNotice,
         deleteNotice,
         addHomework,
+        updateHomework,
         deleteHomework,
         addStudent,
         updateStudent,
         deleteStudent,
         recordAttendance,
+        updateAttendance,
+        deleteAttendance,
         recordFeePayment,
+        updateFeeRecord,
+        deleteFeeRecord,
         addExam,
+        updateExam,
+        deleteExam,
         enterStudentMark,
+        updateMark,
+        deleteMark,
         showToast,
         toasts,
       }}

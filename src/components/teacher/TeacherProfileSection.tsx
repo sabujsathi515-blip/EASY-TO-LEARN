@@ -15,20 +15,26 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export const TeacherProfileSection: React.FC = () => {
   const { settings, setCurrentView, language, t } = useApp();
 
   const handleWhatsApp = () => {
-    const cleanNumber = (settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+    const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
     const msg = encodeURIComponent(
-      'Hello Sabuj Sathi Sir, I want information about EASY TO LEARN tuition classes.'
+      `Hello ${settings.teacherName || 'Milton Sir'}, I want information about EASY TO LEARN tuition classes.`
     );
     window.open(`https://wa.me/${cleanNumber}?text=${msg}`, '_blank');
   };
 
   return (
-    <div className="py-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="py-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center justify-between">
+        <BackButton showHomeShortcut />
+      </div>
+
       {/* Top Banner Card */}
       <div className="bg-indigo-900 border border-indigo-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
@@ -37,7 +43,7 @@ export const TeacherProfileSection: React.FC = () => {
           {/* Avatar Box */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-white/10 border-2 border-white/20 p-2 shadow-xl flex items-center justify-center shrink-0">
             <div className="w-full h-full rounded-xl bg-linear-to-tr from-amber-400 to-amber-300 flex items-center justify-center text-slate-950 font-black text-3xl sm:text-4xl shadow-inner">
-              SS
+              M
             </div>
           </div>
 

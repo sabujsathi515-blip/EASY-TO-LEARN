@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen, FileText, Search, Sparkles, X } from 'lucide-react';
+import { Book, BookOpen, FileText, Search, Sparkles, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { StudyMaterial } from '../../types';
+import { WB_TEXTBOOKS } from '../../data/wbTextBooksData';
+import { StudyMaterial, TextBook } from '../../types';
 
 export const SearchModal: React.FC = () => {
   const {
@@ -64,11 +65,60 @@ export const SearchModal: React.FC = () => {
     });
   }, [query, selectedClassFilter, studyMaterials, subjects, chapters, classes]);
 
+  const matchingBooks = useMemo(() => {
+    if (!query.trim() && selectedClassFilter === 'all') return [];
+    const terms = query.toLowerCase().split(' ').filter(Boolean);
+    return WB_TEXTBOOKS.filter((b) => {
+      if (selectedClassFilter !== 'all' && b.classId !== selectedClassFilter) return false;
+      if (terms.length === 0) return true;
+      const searchable = [
+        b.title,
+        b.titleBn,
+        b.subject,
+        b.subjectBn,
+        b.description,
+        b.descriptionBn,
+        b.publisher,
+        b.publisherBn,
+        `Class ${b.classId}`,
+        `Class-${b.classId}`,
+        `textbook`,
+        `পাঠ্যবই`,
+        ...b.chapters.map((c) => `${c.title} ${c.titleBn}`),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return terms.every((t) => searchable.includes(t));
+    });
+  }, [query, selectedClassFilter]);
+
   if (!isSearchOpen) return null;
 
   const handleOpenMaterial = (mat: StudyMaterial) => {
     setSelectedClassId(mat.classId);
     openDocumentViewer(mat);
+    setIsSearchOpen(false);
+  };
+
+  const handleOpenBook = (book: TextBook) => {
+    setSelectedClassId(book.classId);
+    openDocumentViewer({
+      id: book.id,
+      classId: book.classId,
+      subjectId: book.subject.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      title: `${book.titleBn} (${book.title})`,
+      titleBn: `${book.titleBn} - ${book.publisherBn}`,
+      category: 'chapter_notes',
+      format: 'rich_notes',
+      description: `${book.descriptionBn} (${book.board} Official Textbook)`,
+      totalPages: book.pages && book.pages.length > 0 ? book.pages.length : 1,
+      pages: book.pages,
+      uploadDate: '2026-01-01',
+      author: book.publisherBn,
+      viewCount: 120,
+      tags: ['textbook', 'wb_board', book.board],
+      year: book.academicYear,
+    });
     setIsSearchOpen(false);
   };
 
@@ -136,10 +186,10 @@ export const SearchModal: React.FC = () => {
             <div className="py-8 text-center text-slate-500 dark:text-slate-400 space-y-3">
               <Sparkles className="w-8 h-8 mx-auto text-blue-500 opacity-60" />
               <p className="text-sm font-medium">
-                Try searching like: <span className="text-blue-600 dark:text-blue-400 font-semibold">“Class 10 Mathematics”</span>, <span className="text-blue-600 dark:text-blue-400 font-semibold">“Gas Laws”</span>, or <span className="text-blue-600 dark:text-blue-400 font-semibold">“Suggestions”</span>
+                Try searching like: <span className="text-blue-600 dark:text-blue-400 font-semibold">“Sahaj Path”</span>, <span className="text-blue-600 dark:text-blue-400 font-semibold">“Ganit Prakash”</span>, or <span className="text-blue-600 dark:text-blue-400 font-semibold">“Class 10”</span>
               </p>
               <div className="flex flex-wrap justify-center gap-2 pt-2 text-xs">
-                {['Class 10 Math', 'Quadratic Equations', 'Boyle’s Law', 'Class 8 Rational', 'Model Paper 2026'].map((sample) => (
+                {['সহজ পাঠ', 'গণিত প্রকাশ', 'সাহিত্য মেলা', 'Blossoms', 'Class 10 Math', 'Quadratic Equations'].map((sample) => (
                   <button
                     key={sample}
                     onClick={() => setQuery(sample)}
@@ -150,67 +200,105 @@ export const SearchModal: React.FC = () => {
                 ))}
               </div>
             </div>
-          ) : filteredResults.length === 0 ? (
+          ) : filteredResults.length === 0 && matchingBooks.length === 0 ? (
             <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-              <p className="text-sm font-medium">No study materials found matching "{query}"</p>
+              <p className="text-sm font-medium">No materials or textbooks found matching "{query}"</p>
               <p className="text-xs text-slate-400 mt-1">
                 Try searching with fewer keywords or select All Classes.
               </p>
             </div>
           ) : (
-            <div className="space-y-2.5">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
-                {filteredResults.length} Materials Found
-              </p>
-              {filteredResults.map((mat) => {
-                const subject = subjects.find((s) => s.id === mat.subjectId);
-                const chapter = chapters.find((c) => c.id === mat.chapterId);
-
-                return (
-                  <div
-                    key={mat.id}
-                    onClick={() => handleOpenMaterial(mat)}
-                    className="group p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 bg-white dark:bg-slate-800/70 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all cursor-pointer flex items-start gap-3 shadow-xs"
-                  >
-                    <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 shrink-0">
-                      {mat.format === 'pdf' ? (
-                        <FileText className="w-5 h-5" />
-                      ) : (
-                        <BookOpen className="w-5 h-5" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white">
-                          Class {mat.classId}
-                        </span>
-                        {subject && (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                            {language === 'bn' && subject.nameBn ? subject.nameBn : subject.name}
-                          </span>
-                        )}
-                        <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                          {mat.category.replace('_', ' ')}
+            <div className="space-y-4">
+              {/* Matching Textbooks Section */}
+              {matchingBooks.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
+                    <Book className="w-3.5 h-3.5" />
+                    <span>{matchingBooks.length} WB Board Textbooks</span>
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {matchingBooks.map((book) => (
+                      <div
+                        key={book.id}
+                        onClick={() => handleOpenBook(book)}
+                        className="p-3 rounded-xl border border-indigo-200 dark:border-indigo-900/60 hover:border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50/80 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-xs group"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white">
+                              Class {book.classId}
+                            </span>
+                            <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                              {book.board}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+                            {book.titleBn}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {book.title} • {book.subjectBn}
+                          </p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
+                          পড়ুন →
                         </span>
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                        {language === 'bn' && mat.titleBn ? mat.titleBn : mat.title}
-                      </h4>
-                      {chapter && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                          Ch {chapter.chapterNo}:{' '}
-                          {language === 'bn' && chapter.titleBn ? chapter.titleBn : chapter.title}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0 self-center">
-                      <span className="inline-flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">
-                        {t.viewMaterial}
-                      </span>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Study Materials Section */}
+              {filteredResults.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
+                    {filteredResults.length} Study Materials
+                  </p>
+                  {filteredResults.map((mat) => {
+                    const subject = subjects.find((s) => s.id === mat.subjectId);
+                    const chapter = chapters.find((c) => c.id === mat.chapterId);
+
+                    return (
+                      <div
+                        key={mat.id}
+                        onClick={() => handleOpenMaterial(mat)}
+                        className="group p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 bg-white dark:bg-slate-800/70 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all cursor-pointer flex items-start gap-3 shadow-xs"
+                      >
+                        <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 shrink-0">
+                          {mat.format === 'pdf' ? (
+                            <FileText className="w-5 h-5" />
+                          ) : (
+                            <BookOpen className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white">
+                              Class {mat.classId}
+                            </span>
+                            {subject && (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                {language === 'bn' && subject.nameBn ? subject.nameBn : subject.name}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
+                              {mat.category.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                            {language === 'bn' && mat.titleBn ? mat.titleBn : mat.title}
+                          </h4>
+                          {chapter && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                              {language === 'bn' && chapter.titleBn ? chapter.titleBn : chapter.title}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

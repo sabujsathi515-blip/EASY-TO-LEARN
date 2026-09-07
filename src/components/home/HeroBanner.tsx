@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 
 export const HeroBanner: React.FC = () => {
   const { setCurrentView, setSelectedClassId, settings, language, t } = useApp();
@@ -22,7 +23,7 @@ export const HeroBanner: React.FC = () => {
   };
 
   const handleWhatsApp = () => {
-    const cleanNumber = (settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+    const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
     const msg = encodeURIComponent('Hello EASY TO LEARN, I want information about the tuition classes.');
     window.open(`https://wa.me/${cleanNumber}?text=${msg}`, '_blank');
   };
@@ -56,7 +57,7 @@ export const HeroBanner: React.FC = () => {
             {/* Teacher Badge Bar */}
             <div className="inline-flex flex-wrap items-center justify-center lg:justify-start gap-4 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-xs">
               <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg shrink-0 shadow-xs">
-                SS
+                {settings.teacherName.charAt(0) || 'M'}
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
@@ -81,6 +82,8 @@ export const HeroBanner: React.FC = () => {
                 <span>Explore Study Materials</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
+
+              <PWAInstallButton variant="hero" />
 
               <button
                 onClick={handleWhatsApp}

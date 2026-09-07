@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export const ClassSection: React.FC = () => {
   const {
@@ -41,6 +42,11 @@ export const ClassSection: React.FC = () => {
 
   return (
     <section className="py-8 sm:py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Back Button */}
+      <div className="mb-6">
+        <BackButton showHomeShortcut />
+      </div>
+
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>

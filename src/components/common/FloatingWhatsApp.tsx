@@ -7,7 +7,7 @@ export const FloatingWhatsApp: React.FC = () => {
 
   const handleWhatsAppClick = () => {
     // Format phone number by removing spaces, plus, dashes
-    const cleanNumber = (settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+    const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
     const prefilledMessage =
       language === 'bn'
         ? 'নমস্কার EASY TO LEARN, আমি টিউশন ক্লাস ও ভর্তি সংক্রান্ত তথ্য জানতে চাই।'

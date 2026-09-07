@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { StudyMaterial } from '../../types';
+import { BackButton } from '../common/BackButton';
 
 export const QuestionPapersSection: React.FC = () => {
   const {
@@ -59,6 +60,11 @@ export const QuestionPapersSection: React.FC = () => {
 
   return (
     <div className="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center justify-between">
+        <BackButton showHomeShortcut />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">

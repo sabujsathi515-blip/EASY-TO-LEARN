@@ -10,6 +10,7 @@ export const translations = {
     // Navigation
     home: 'Home',
     classes: 'Classes',
+    books: 'Text Books (WB)',
     subjects: 'Subjects',
     studyMaterials: 'Study Materials',
     notices: 'Notice Board',
@@ -22,6 +23,9 @@ export const translations = {
     logout: 'Logout',
     searchPlaceholder: 'Search class, subject, chapter, notes, PDF, homework...',
     installApp: 'Install EASY TO LEARN App',
+    goBack: 'Go Back',
+    backToHome: 'Back to Home',
+    backToClasses: 'Back to Classes',
 
     // Roles
     admin: 'Teacher / Admin',
@@ -131,6 +135,7 @@ export const translations = {
     // Navigation
     home: 'মূল পাতা',
     classes: 'শ্রেণি',
+    books: 'পাঠ্যবই (WB Board)',
     subjects: 'বিষয়সমূহ',
     studyMaterials: 'স্টাডি মেটেরিয়াল',
     notices: 'নোটিশ বোর্ড',
@@ -143,6 +148,9 @@ export const translations = {
     logout: 'লগআউট',
     searchPlaceholder: 'শ্রেণি, বিষয়, অধ্যায়, নোটস, পিডিএফ বা হোমওয়ার্ক খুঁজুন...',
     installApp: 'EASY TO LEARN অ্যাপ ইনস্টল করুন',
+    goBack: 'পেছনে যান',
+    backToHome: 'মূল পাতায় ফিরুন',
+    backToClasses: 'শ্রেণি তালিকায় ফিরুন',
 
     // Roles
     admin: 'শিক্ষক / অ্যাডমিন',

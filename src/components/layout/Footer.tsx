@@ -92,6 +92,14 @@ export const Footer: React.FC = () => {
             <ul className="space-y-1.5 text-xs text-slate-400">
               <li>
                 <button
+                  onClick={() => handleNavClick('books')}
+                  className="hover:text-amber-300 font-semibold text-amber-400 transition flex items-center gap-1"
+                >
+                  <span>WB Board Textbooks (১-১০)</span>
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => handleNavClick('materials')}
                   className="hover:text-white transition"
                 >
@@ -127,7 +135,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNavClick('teacher_profile')}
                   className="hover:text-white transition"
                 >
-                  Teacher Profile (Sabuj Sathi Sir)
+                  Teacher Profile ({settings.teacherName || 'Milton Sir'})
                 </button>
               </li>
             </ul>

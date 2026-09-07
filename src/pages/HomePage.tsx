@@ -36,7 +36,7 @@ export const HomePage: React.FC = () => {
   const recentMaterials = studyMaterials.slice(0, 6);
 
   const handleWhatsApp = () => {
-    const cleanNumber = (settings.whatsappNumber || '919876543210').replace(/[^0-9]/g, '');
+    const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
     const msg = encodeURIComponent(
       'Hello EASY TO LEARN, I want information about tuition admissions.'
     );
@@ -77,6 +77,39 @@ export const HomePage: React.FC = () => {
 
       {/* Classes 1 to 10 Structured Section */}
       <ClassSection />
+
+      {/* Official WB Board Textbooks Spotlight Banner */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border border-indigo-700/60 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-3 text-center md:text-left z-10 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-slate-950 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'নতুন সংযুক্ত: পশ্চিমবঙ্গ পর্ষদ পাঠ্যপুস্তক' : 'New: Official WB Board Textbooks'}</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black">
+              {language === 'bn'
+                ? '১ম থেকে ১০ম শ্রেণির সকল আসল টেক্সট বুক (WBBSE & WBBPE)'
+                : 'Complete Official West Bengal Board Textbooks (Classes 1–10)'}
+            </h2>
+            <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed">
+              {language === 'bn'
+                ? 'সহজ পাঠ, আমার বই, পাতাবাহার, গণিতপ্রভা, সাহিত্য মেলা, ব্লসমস, সাহিত্য সঞ্চয়ন, গণিত প্রকাশ ও মাধ্যমিক কোনি—সব এক জায়গায় সুরক্ষিত অনলাইন পড়ার সুযোগ।'
+                : 'Sahaj Path, Amar Boi, Patabahar, Ganit Prabha, Sahitya Mela, Blossoms, Sahitya Sanchayan, Ganit Prakash, Koni, and all core subjects.'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 z-10 shrink-0">
+            <button
+              onClick={() => setCurrentView('books')}
+              className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm shadow-md hover:shadow-amber-400/30 transition flex items-center gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>{language === 'bn' ? 'পাঠ্যবই সেকশন খুলুন' : 'Open Text Books'}</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Highlights & Recent Study Materials Section */}
       <section className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">

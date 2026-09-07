@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Notice } from '../../types';
+import { BackButton } from '../common/BackButton';
 
 export const NoticeBoardSection: React.FC = () => {
   const { notices, addNotice, deleteNotice, currentUser, language, t } = useApp();
@@ -94,6 +95,11 @@ export const NoticeBoardSection: React.FC = () => {
 
   return (
     <div className="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center justify-between">
+        <BackButton showHomeShortcut />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>

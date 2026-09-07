@@ -20,6 +20,7 @@ export const LoginModal: React.FC = () => {
   const [studentPass, setStudentPass] = useState('');
 
   // Admin credentials
+  const [adminUser, setAdminUser] = useState('EASY TO LEARN');
   const [adminPass, setAdminPass] = useState('');
 
   if (!isLoginOpen) return null;
@@ -31,7 +32,7 @@ export const LoginModal: React.FC = () => {
 
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loginAsAdmin(adminPass);
+    loginAsAdmin(adminPass, adminUser);
   };
 
   return (
@@ -160,14 +161,17 @@ export const LoginModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Admin Username
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Admin User ID</span>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Auto-filled</span>
                 </label>
                 <input
                   type="text"
-                  disabled
-                  value="admin (Teacher: Sabuj Sathi Sir)"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm cursor-not-allowed"
+                  required
+                  value={adminUser}
+                  onChange={(e) => setAdminUser(e.target.value)}
+                  placeholder="EASY TO LEARN"
+                  className="w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/30 text-slate-900 dark:text-white font-semibold text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -179,7 +183,7 @@ export const LoginModal: React.FC = () => {
                   <input
                     type="password"
                     required
-                    placeholder="Enter Admin Password"
+                    placeholder="Enter 6-digit Password (PIN)"
                     value={adminPass}
                     onChange={(e) => setAdminPass(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -187,14 +191,8 @@ export const LoginModal: React.FC = () => {
                   <KeyRound className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
                 </div>
                 <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Demo Master Password: <strong>admin123</strong></span>
-                  <button
-                    type="button"
-                    onClick={() => setAdminPass('admin123')}
-                    className="text-blue-600 dark:text-blue-400 font-semibold underline"
-                  >
-                    Auto-Fill
-                  </button>
+                  <span>Teacher Security Key</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-mono">PIN required</span>
                 </div>
               </div>
 
