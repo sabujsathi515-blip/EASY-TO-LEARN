@@ -2,17 +2,23 @@ import React, { useMemo, useState } from 'react';
 import {
   AlertCircle,
   Award,
+  BarChart3,
   BookOpen,
   Calendar,
   CheckCircle2,
   Clock,
   DollarSign,
   FileCheck,
+  FileQuestion,
   FileText,
   GraduationCap,
   Layers,
   Lock,
   LogOut,
+  PlayCircle,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
   UserCheck,
   XCircle,
 } from 'lucide-react';
@@ -33,6 +39,11 @@ export const StudentPortal: React.FC = () => {
     subjects,
     openDocumentViewer,
     setCurrentView,
+    mockTests,
+    testResults,
+    ongoingAttempt,
+    clearOngoingAttempt,
+    startMockTest,
     language,
     t,
   } = useApp();
@@ -60,6 +71,11 @@ export const StudentPortal: React.FC = () => {
   }
 
   // Student specific data
+  const studentSubjects = useMemo(
+    () => subjects.filter((s) => s.classId === student.classId),
+    [subjects, student.classId]
+  );
+
   const studentMaterials = useMemo(
     () => studyMaterials.filter((m) => m.classId === student.classId),
     [studyMaterials, student.classId]
@@ -90,6 +106,70 @@ export const StudentPortal: React.FC = () => {
     () => marks.filter((m) => m.studentId === student.id),
     [marks, student.id]
   );
+
+  const studentMockTests = useMemo(
+    () => mockTests.filter((t) => t.classId === student.classId),
+    [mockTests, student.classId]
+  );
+
+  const studentTestResults = useMemo(
+    () =>
+      testResults.filter(
+        (r) => r.studentId === student.studentId || r.studentName === student.name
+      ),
+    [testResults, student]
+  );
+
+  // Statistics required by Part 4
+  const totalTestsCount = studentMockTests.length;
+  const completedTestsCount = studentTestResults.length;
+  const averageMarks =
+    completedTestsCount > 0
+      ? (
+          studentTestResults.reduce((acc, r) => acc + r.obtainedMarks, 0) /
+          completedTestsCount
+        ).toFixed(1)
+      : '0';
+  const averagePercentage =
+    completedTestsCount > 0
+      ? Math.round(
+          studentTestResults.reduce((acc, r) => acc + r.percentage, 0) /
+            completedTestsCount
+        )
+      : 0;
+
+  // Best Subject & Weak Subject based on mock test results
+  const subjectPerformance = useMemo(() => {
+    const map: Record<string, { totalPct: number; count: number; name: string }> = {};
+    studentTestResults.forEach((r) => {
+      if (!r.subjectId) return;
+      if (!map[r.subjectId]) {
+        const subj = subjects.find((s) => s.id === r.subjectId);
+        map[r.subjectId] = {
+          totalPct: 0,
+          count: 0,
+          name: subj?.nameBn || subj?.name || r.subjectId,
+        };
+      }
+      map[r.subjectId].totalPct += r.percentage;
+      map[r.subjectId].count += 1;
+    });
+
+    const list = Object.values(map).map((item) => ({
+      name: item.name,
+      avg: Math.round(item.totalPct / item.count),
+    }));
+
+    list.sort((a, b) => b.avg - a.avg);
+
+    return {
+      best: list.length > 0 ? `${list[0].name} (${list[0].avg}%)` : (studentSubjects[0]?.nameBn || 'বাংলা'),
+      weak:
+        list.length > 1
+          ? `${list[list.length - 1].name} (${list[list.length - 1].avg}%)`
+          : 'None (সন্তোষজনক)',
+    };
+  }, [studentTestResults, subjects, studentSubjects]);
 
   // Attendance metrics
   const totalDays = studentAttendance.length;
@@ -135,41 +215,166 @@ export const StudentPortal: React.FC = () => {
           </button>
         </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-          <div className="p-3 rounded-2xl bg-blue-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            <div className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400">
-              {studentMaterials.length}
+        {/* Part 4: Comprehensive Student Performance Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+          <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-slate-800/50 border border-indigo-100/50 dark:border-slate-800">
+            <div className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400">
+              {totalTestsCount}
             </div>
-            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
-              Class Notes
-            </div>
-          </div>
-          <div className="p-3 rounded-2xl bg-purple-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400">
-              {studentHomework.length}
-            </div>
-            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
-              Homework
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              Total Tests
             </div>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+
+          <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-slate-800/50 border border-emerald-100/50 dark:border-slate-800">
             <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              {attendanceRate}%
+              {completedTestsCount}
             </div>
-            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
-              Attendance
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              Completed Tests
             </div>
           </div>
-          <div className="p-3 rounded-2xl bg-amber-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
-              {studentMarks.length}
+
+          <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-slate-800/50 border border-blue-100/50 dark:border-slate-800">
+            <div className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400">
+              {averageMarks}
             </div>
-            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
-              Evaluations
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              Avg Marks
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-slate-800/50 border border-purple-100/50 dark:border-slate-800">
+            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400">
+              {averagePercentage}%
+            </div>
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              Avg Percentage
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-teal-50/60 dark:bg-slate-800/50 border border-teal-100/50 dark:border-slate-800">
+            <div className="text-sm sm:text-base font-bold text-teal-700 dark:text-teal-400 truncate">
+              {subjectPerformance.best}
+            </div>
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 flex items-center justify-center gap-1">
+              <TrendingUp className="w-3 h-3 text-emerald-500" />
+              <span>Best Subject</span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-rose-50/60 dark:bg-slate-800/50 border border-rose-100/50 dark:border-slate-800">
+            <div className="text-sm sm:text-base font-bold text-rose-700 dark:text-rose-400 truncate">
+              {subjectPerformance.weak}
+            </div>
+            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 flex items-center justify-center gap-1">
+              <TrendingDown className="w-3 h-3 text-rose-500" />
+              <span>Weak Subject</span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Part 14: Incomplete Test Recovery Alert */}
+      {ongoingAttempt && (
+        <div className="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-400 dark:border-amber-600 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-sm sm:text-base">
+              <Sparkles className="w-5 h-5 text-amber-500 animate-bounce" />
+              <span>আপনার অসম্পূর্ণ পরীক্ষাটি পাওয়া গেছে।</span>
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              আপনি যেখান থেকে পরীক্ষা বন্ধ করেছিলেন সেখান থেকেই উত্তর দেওয়া চালিয়ে যেতে পারেন অথবা নতুন পরীক্ষা শুরু করতে পারেন।
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                const found = mockTests.find((t) => t.id === ongoingAttempt.testId);
+                if (found) startMockTest(found);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Clock className="w-4 h-4" />
+              <span>CONTINUE TEST</span>
+            </button>
+            <button
+              onClick={clearOngoingAttempt}
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold hover:bg-amber-100 transition cursor-pointer"
+            >
+              <span>START NEW TEST</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Part 4: Quick Access Action Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <button
+          onClick={() => setCurrentView('classes')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">My Class</div>
+          <div className="text-[11px] text-slate-500">Class {student.classId}</div>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('classes')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">My Subjects</div>
+          <div className="text-[11px] text-slate-500">{studentSubjects.length} Subjects</div>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('mock_tests')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Mock Tests</div>
+          <div className="text-[11px] text-slate-500">{studentMockTests.length} Tests</div>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('materials')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Study Materials</div>
+          <div className="text-[11px] text-slate-500">{studentMaterials.length} Resources</div>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('results')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Award className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">My Results</div>
+          <div className="text-[11px] text-slate-500">{completedTestsCount} Tests Done</div>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('practice')}
+          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-pink-500 hover:shadow-sm transition text-left space-y-1.5 group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center group-hover:scale-105 transition">
+            <PlayCircle className="w-4 h-4" />
+          </div>
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Practice Tests</div>
+          <div className="text-[11px] text-slate-500">Self Assessment</div>
+        </button>
       </div>
 
       {/* Desk Navigation Tabs */}

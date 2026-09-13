@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'admin' || request.auth.token.email == 'admin@easylearn.wb');
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'teacher' || isAdmin());
+    }
+
+    // Public / Enrolled Students can read published materials
+    match /materials/{materialId} {
+      allow read: if true; // Students can read study materials & PDFs
+      allow create, update, delete: if isTeacher() || isAdmin();
+    }
+
+    // Question Bank
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher() || isAdmin();
+    }
+
+    // Mock Tests
+    match /tests/{testId} {
+      allow read: if true; // Students can see available mock tests
+      allow create, update, delete: if isTeacher() || isAdmin();
+    }
+
+    // Test Results
+    match /results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() || true; // Allow student submission
+      allow update, delete: if isTeacher() || isAdmin();
+    }
+
+    // Students Directory
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Self-registration
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == studentId);
+    }
+
+    // Notices
+    match /notices/{noticeId} {
+      allow read: if true; // Publicly accessible to students
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // Classes and Subjects
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Centre Settings
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

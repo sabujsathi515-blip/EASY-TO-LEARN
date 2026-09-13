@@ -1,8 +1,19 @@
-export type UserRole = 'guest' | 'student' | 'admin';
+export type UserRole = 'guest' | 'student' | 'teacher' | 'admin';
 
 export type Language = 'en' | 'bn';
 
 export type Theme = 'light' | 'dark';
+
+export type MaterialType =
+  | 'notes'
+  | 'book'
+  | 'pdf'
+  | 'question_paper'
+  | 'worksheet'
+  | 'suggestion'
+  | 'study_material'
+  | 'pyq'
+  | 'other';
 
 export type MaterialCategory =
   | 'chapter_notes'
@@ -241,8 +252,11 @@ export interface StudyMaterial {
   classId: number;
   subjectId: string;
   chapterId?: string;
+  chapter?: string;
+  topic?: string;
   title: string;
   titleBn?: string;
+  type?: MaterialType;
   category: MaterialCategory;
   format: 'pdf' | 'rich_notes' | 'worksheet' | 'notes' | 'image';
   description?: string;
@@ -251,8 +265,16 @@ export interface StudyMaterial {
   fileUrl?: string; // base64, blob or direct url for PDF/Image
   fileName?: string;
   fileSize?: string;
+  storagePath?: string;
+  coverImageUrl?: string;
   uploadDate: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
   author: string;
+  isPublished?: boolean;
+  allowDownload?: boolean;
+  isReadOnly?: boolean;
+  visibleTo?: 'all' | 'class' | 'subject';
   isSampleContent?: boolean;
   viewCount: number;
   tags?: string[];

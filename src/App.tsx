@@ -27,6 +27,7 @@ import { OfflineExamPaper } from './components/exam/OfflineExamPaper';
 import { TestResultModal } from './components/exam/TestResultModal';
 import { TestCertificateModal } from './components/exam/TestCertificateModal';
 import { StudentRegisterModal } from './components/auth/StudentRegisterModal';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { MockTest } from './types';
 
 const MainLayout: React.FC = () => {
@@ -57,10 +58,10 @@ const MainLayout: React.FC = () => {
       <PageNavigationHeader />
 
       {/* Main Content View Switcher */}
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         {currentView === 'home' && <HomePage />}
         {currentView === 'classes' && <ClassSection />}
-        {currentView === 'mock_tests' && (
+        {(currentView === 'mock_tests' || currentView === 'tests') && (
           <MockTestPortal
             onSelectPrintOffline={(test) => {
               setOfflinePrintTest(test);
@@ -91,6 +92,9 @@ const MainLayout: React.FC = () => {
         {currentView === 'student_portal' && <StudentPortal />}
         {currentView === 'admin_dashboard' && <AdminDashboard />}
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav />
 
       {/* Footer */}
       <Footer />

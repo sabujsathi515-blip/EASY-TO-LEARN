@@ -254,6 +254,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (parsed.contactNumber === '+91 98765 43210' || !parsed.contactNumber) {
         parsed.contactNumber = '+91 73844 91269';
       }
+      if (
+        !parsed.qualification ||
+        parsed.qualification.includes('M.Sc') ||
+        parsed.qualification === 'M.Sc (Mathematics), B.Ed (First Class)'
+      ) {
+        parsed.qualification = 'B.A (Philosophy)';
+      }
       return { ...INITIAL_SETTINGS, ...parsed };
     } catch {
       return INITIAL_SETTINGS;

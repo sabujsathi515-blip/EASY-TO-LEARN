@@ -49,6 +49,7 @@ import {
   StudyMaterial,
   Subject,
 } from '../../types';
+import { syncMaterialToFirestore } from '../../services/firebase';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -130,6 +131,8 @@ export const AdminDashboard: React.FC = () => {
   const [uploadPageContent, setUploadPageContent] = useState('');
   const [uploadFileUrl, setUploadFileUrl] = useState<string>('');
   const [uploadFileName, setUploadFileName] = useState<string>('');
+  const [uploadAllowDownload, setUploadAllowDownload] = useState<boolean>(false);
+  const [uploadMaterialType, setUploadMaterialType] = useState<string>('notes');
 
   // Edit states for all models
   const [editingMaterial, setEditingMaterial] = useState<StudyMaterial | null>(null);
@@ -255,13 +258,14 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!uploadTitle.trim()) return;
 
-    addStudyMaterial({
+    const newMatData = {
       classId: adminClassId,
       subjectId: uploadSubjectId || classSubjects[0]?.id || 'sub-1',
       chapterId: uploadChapterId || undefined,
       title: uploadTitle,
       titleBn: uploadTitleBn || undefined,
       category: uploadCategory,
+      materialType: uploadMaterialType as any,
       format: uploadFormat,
       fileUrl: uploadFileUrl || undefined,
       fileName: uploadFileName || undefined,
@@ -269,6 +273,8 @@ export const AdminDashboard: React.FC = () => {
       description: uploadDesc,
       totalPages: uploadFormat === 'image' ? 1 : uploadPagesCount,
       author: settings.teacherName,
+      allowDownload: uploadAllowDownload,
+      isReadOnly: !uploadAllowDownload,
       pages: [
         {
           pageNumber: 1,
@@ -281,6 +287,17 @@ export const AdminDashboard: React.FC = () => {
               : `EASY TO LEARN • Complete Study Module for Class ${adminClassId}.\n\nThis material has been compiled and reviewed by ${settings.teacherName}.\n\nTopics covered in this lesson:\n1. Core definitions & axioms\n2. Key formulas and derivations\n3. Solved examples with board marking schemes\n4. Practice exercises for home study.\n\nRead-only mode is active. Download disabled.`),
         },
       ],
+    };
+
+    addStudyMaterial(newMatData);
+
+    // Sync to Firestore cloud storage
+    syncMaterialToFirestore({
+      ...newMatData,
+      id: 'mat-' + Date.now(),
+      viewCount: 1,
+      uploadDate: new Date().toISOString().split('T')[0],
+      isSampleContent: false,
     });
 
     setUploadTitle('');
@@ -289,6 +306,7 @@ export const AdminDashboard: React.FC = () => {
     setUploadPageContent('');
     setUploadFileUrl('');
     setUploadFileName('');
+    setUploadAllowDownload(false);
     setShowUploadModal(false);
   };
 
@@ -832,6 +850,28 @@ export const AdminDashboard: React.FC = () => {
                 />
               </div>
 
+              {/* Download Permission Setting */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Allow Student Download (ডাউনলোড অনুমতি)</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Off by default to prevent unauthorized distribution and enable read-only view.
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={uploadAllowDownload}
+                    onChange={(e) => setUploadAllowDownload(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -879,6 +919,31 @@ export const AdminDashboard: React.FC = () => {
                           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
                             {mat.format}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPerm = !mat.allowDownload;
+                              updateStudyMaterial(mat.id, {
+                                allowDownload: newPerm,
+                                isReadOnly: !newPerm,
+                              });
+                              showToast(
+                                newPerm
+                                  ? 'Download permitted for students'
+                                  : 'Protected Read-Only mode enabled',
+                                'info'
+                              );
+                            }}
+                            title="Click to toggle student download permission"
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition ${
+                              mat.allowDownload
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200'
+                                : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+                            }`}
+                          >
+                            <Download className="w-2.5 h-2.5" />
+                            <span>{mat.allowDownload ? 'Download Allowed' : 'Read Only'}</span>
+                          </button>
                         </div>
                         <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                           {mat.title}

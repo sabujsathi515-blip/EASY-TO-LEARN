@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  Download,
   Eye,
   FileCheck,
   FileQuestion,
@@ -105,13 +106,16 @@ export const StudyMaterialsSection: React.FC = () => {
       // Category filter
       if (activeCategory !== 'all' && mat.category !== activeCategory) return false;
 
-      // Search query filter
+      // Search query filter (Search by Title, Chapter, Topic)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle =
           mat.title.toLowerCase().includes(q) || (mat.titleBn || '').toLowerCase().includes(q);
         const matchesDesc = (mat.description || '').toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc) return false;
+        const matchesTopic = (mat.topic || '').toLowerCase().includes(q);
+        const matchesChapter = (mat.chapter || '').toLowerCase().includes(q);
+        const matchesCategory = (mat.category || '').toLowerCase().includes(q);
+        if (!matchesTitle && !matchesDesc && !matchesTopic && !matchesChapter && !matchesCategory) return false;
       }
 
       return true;
@@ -428,15 +432,30 @@ export const StudyMaterialsSection: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Action Button: READ ONLY */}
-                    <div className="shrink-0 flex items-center gap-2 sm:self-center">
+                    {/* Action Buttons: READ NOW & DOWNLOAD */}
+                    <div className="shrink-0 flex flex-wrap items-center gap-2 sm:self-center">
                       <button
                         onClick={() => openDocumentViewer(mat)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-sm transition flex items-center justify-center gap-2"
+                        className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        title={mat.isReadOnly ? 'Read Only Study Material' : 'Read Now'}
                       >
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>{t.viewMaterial}</span>
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'পড়ুন' : 'Read Now'}</span>
                       </button>
+
+                      {mat.allowDownload && mat.fileUrl && (
+                        <a
+                          href={mat.fileUrl}
+                          download={mat.fileName || `${mat.title}.pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Download authorized PDF"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{language === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 );

@@ -21,7 +21,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   tagline: 'West Bengal Board Mock Test Portal',
   taglineBn: 'পশ্চিমবঙ্গ পর্ষদ মক টেস্ট পোর্টাল (১ম - ১০ম শ্রেণি)',
   teacherName: 'Milton Sir',
-  qualification: 'M.Sc (Mathematics), B.Ed (First Class)',
+  qualification: 'B.A (Philosophy)',
   experience: '9+ Years of Teaching Excellence in Board & School Curricula',
   subjectsTaught: 'Mathematics, Physical Science, Life Science, English & Computer',
   classesTaught: 'Class 1 to Class 10 (Specialized Batches for Madhyamik & Primary)',

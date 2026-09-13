@@ -33,6 +33,8 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
     setSelectedClassId,
     currentUser,
     testResults,
+    ongoingAttempt,
+    clearOngoingAttempt,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -120,6 +122,41 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
           </div>
         )}
       </div>
+
+      {/* Part 14: Incomplete Test Recovery Banner */}
+      {ongoingAttempt && (
+        <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-sm sm:text-base">
+              <Sparkles className="w-5 h-5 text-amber-500 animate-bounce" />
+              <span>আপনার অসম্পূর্ণ পরীক্ষাটি পাওয়া গেছে।</span>
+            </div>
+            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">
+              আপনি পূর্বে একটি মক টেস্ট শুরু করেছিলেন। আপনি যেখান থেকে ছেড়েছিলেন সেখান থেকেই শুরু করতে পারেন অথবা নতুন করে পরীক্ষা দিতে পারেন।
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                const found = mockTests.find((t) => t.id === ongoingAttempt.testId);
+                if (found) {
+                  startMockTest(found);
+                }
+              }}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Clock className="w-4 h-4" />
+              <span>CONTINUE TEST (চালিয়ে যান)</span>
+            </button>
+            <button
+              onClick={clearOngoingAttempt}
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-slate-700 dark:text-slate-200 hover:bg-amber-100 font-bold text-xs sm:text-sm transition cursor-pointer"
+            >
+              <span>START NEW (নতুন পরীক্ষা)</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-5 mb-8 shadow-xs space-y-4">
