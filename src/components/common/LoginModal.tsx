@@ -6,6 +6,7 @@ export const LoginModal: React.FC = () => {
   const {
     isLoginOpen,
     setIsLoginOpen,
+    setIsRegisterOpen,
     loginAsAdmin,
     loginAsStudent,
     loginQuickStudent,
@@ -121,10 +122,23 @@ export const LoginModal: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition"
+                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition cursor-pointer"
               >
                 Sign In to Student Desk
               </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLoginOpen(false);
+                    setIsRegisterOpen(true);
+                  }}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                >
+                  নতুন শিক্ষার্থী? এখানে নিবন্ধন করুন (Register New Student)
+                </button>
+              </div>
 
               {/* 1-Click Demo Accounts */}
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">

@@ -8,14 +8,21 @@ import {
   FeeRecord,
   HomeworkItem,
   Language,
+  MockTest,
   Notice,
+  OngoingTestAttempt,
+  Question,
+  QuestionAttemptReview,
   StudentMark,
   StudentProfile,
   StudyMaterial,
   Subject,
+  TestResult,
+  TextBook,
   Theme,
   UserRole,
 } from '../types';
+import { WB_TEXTBOOKS } from '../data/wbTextBooksData';
 import {
   INITIAL_ATTENDANCE,
   INITIAL_CHAPTERS,
@@ -30,6 +37,12 @@ import {
   INITIAL_STUDY_MATERIALS,
   INITIAL_SUBJECTS,
 } from '../data/initialData';
+import {
+  INITIAL_MOCK_TESTS,
+  INITIAL_QUESTIONS,
+  INITIAL_TEST_RESULTS,
+} from '../data/mockTestData';
+import { syncTestResult } from '../services/firebase';
 import { translations } from '../utils/translations';
 
 export interface CurrentUser {
@@ -76,6 +89,8 @@ interface AppContextType {
   setIsSearchOpen: (open: boolean) => void;
   isLoginOpen: boolean;
   setIsLoginOpen: (open: boolean) => void;
+  isRegisterOpen: boolean;
+  setIsRegisterOpen: (open: boolean) => void;
 
   // Auth
   currentUser: CurrentUser;
@@ -96,6 +111,12 @@ interface AppContextType {
   fees: FeeRecord[];
   exams: Exam[];
   marks: StudentMark[];
+  textbooks: TextBook[];
+
+  // Textbook Management
+  addTextBook: (book: Omit<TextBook, 'id'>) => void;
+  updateTextBook: (id: string, book: Partial<TextBook>) => void;
+  deleteTextBook: (id: string) => void;
 
   // Study Material Management
   addStudyMaterial: (mat: Omit<StudyMaterial, 'id' | 'viewCount' | 'uploadDate'>) => void;
@@ -142,6 +163,43 @@ interface AppContextType {
   updateMark: (id: string, mark: Partial<StudentMark>) => void;
   deleteMark: (id: string) => void;
 
+  // Mock Test Portal & Question Bank
+  questions: Question[];
+  mockTests: MockTest[];
+  testResults: TestResult[];
+  ongoingAttempt: OngoingTestAttempt | null;
+  activeTest: MockTest | null;
+  activeResult: TestResult | null;
+  activeCertificate: TestResult | null;
+  startMockTest: (test: MockTest) => void;
+  exitMockTest: () => void;
+  saveOngoingAttempt: (attempt: OngoingTestAttempt) => void;
+  clearOngoingAttempt: () => void;
+  submitMockTest: (test: MockTest, answers: Record<string, string>, timeTakenSeconds: number) => TestResult;
+  enterOfflineTestResult: (resultData: Omit<TestResult, 'id' | 'submittedAt' | 'isOffline'>) => void;
+  openTestResult: (result: TestResult) => void;
+  closeTestResult: () => void;
+  openCertificate: (result: TestResult) => void;
+  closeCertificate: () => void;
+  addQuestion: (q: Omit<Question, 'id' | 'createdAt'>) => void;
+  updateQuestion: (id: string, q: Partial<Question>) => void;
+  deleteQuestion: (id: string) => void;
+  addMockTest: (test: Omit<MockTest, 'id' | 'createdAt'>) => void;
+  updateMockTest: (id: string, test: Partial<MockTest>) => void;
+  deleteMockTest: (id: string) => void;
+  deleteTestResult: (id: string) => void;
+  registerStudent: (data: {
+    name: string;
+    classId: number;
+    section?: string;
+    rollNumber: string;
+    schoolName?: string;
+    guardianName?: string;
+    mobileNumber: string;
+    email?: string;
+    password?: string;
+  }) => StudentProfile;
+
   // Feedback Toast
   showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   toasts: Toast[];
@@ -161,6 +219,11 @@ const STORAGE_KEYS = {
   FEES: 'e2l_fees_v1',
   EXAMS: 'e2l_exams_v1',
   MARKS: 'e2l_marks_v1',
+  TEXTBOOKS: 'e2l_textbooks_v1',
+  QUESTIONS: 'e2l_questions_v1',
+  MOCK_TESTS: 'e2l_mock_tests_v1',
+  TEST_RESULTS: 'e2l_test_results_v1',
+  ONGOING_ATTEMPT: 'e2l_ongoing_attempt_v1',
   USER: 'e2l_user_v1',
   THEME: 'e2l_theme_v1',
   LANG: 'e2l_lang_v1',
@@ -258,6 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Modals
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
 
   // Auth
   const [currentUser, setCurrentUser] = useState<CurrentUser>(() => {
@@ -307,6 +371,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem(STORAGE_KEYS.MARKS);
     return saved ? JSON.parse(saved) : INITIAL_MARKS;
   });
+  const [textbooks, setTextbooks] = useState<TextBook[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.TEXTBOOKS);
+    return saved ? JSON.parse(saved) : WB_TEXTBOOKS;
+  });
+
+  // Mock Test State
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.QUESTIONS);
+    return saved ? JSON.parse(saved) : INITIAL_QUESTIONS;
+  });
+
+  const [mockTests, setMockTests] = useState<MockTest[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MOCK_TESTS);
+    return saved ? JSON.parse(saved) : INITIAL_MOCK_TESTS;
+  });
+
+  const [testResults, setTestResults] = useState<TestResult[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.TEST_RESULTS);
+    return saved ? JSON.parse(saved) : INITIAL_TEST_RESULTS;
+  });
+
+  const [ongoingAttempt, setOngoingAttempt] = useState<OngoingTestAttempt | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ONGOING_ATTEMPT);
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [activeTest, setActiveTest] = useState<MockTest | null>(null);
+  const [activeResult, setActiveResult] = useState<TestResult | null>(null);
+  const [activeCertificate, setActiveCertificate] = useState<TestResult | null>(null);
 
   // Toasts
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -365,6 +458,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [marks]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.TEXTBOOKS, JSON.stringify(textbooks));
+  }, [textbooks]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(questions));
+  }, [questions]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MOCK_TESTS, JSON.stringify(mockTests));
+  }, [mockTests]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.TEST_RESULTS, JSON.stringify(testResults));
+  }, [testResults]);
+
+  useEffect(() => {
+    if (ongoingAttempt) {
+      localStorage.setItem(STORAGE_KEYS.ONGOING_ATTEMPT, JSON.stringify(ongoingAttempt));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.ONGOING_ATTEMPT);
+    }
+  }, [ongoingAttempt]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
   }, [currentUser]);
 
@@ -410,6 +527,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFees(INITIAL_FEES);
     setExams(INITIAL_EXAMS);
     setMarks(INITIAL_MARKS);
+    setTextbooks(WB_TEXTBOOKS);
     setCurrentUser({ role: 'guest' });
     showToast('Sample data reset to defaults', 'info');
   };
@@ -658,6 +776,268 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Student mark entry deleted', 'info');
   };
 
+  // Textbook Management operations
+  const addTextBook = (book: Omit<TextBook, 'id'>) => {
+    const id = 'wb-book-' + Date.now();
+    const newBook: TextBook = {
+      ...book,
+      id,
+      chapters: book.chapters || [],
+      pages: book.pages || [],
+      uploadDate: new Date().toISOString().split('T')[0],
+    };
+    setTextbooks((prev) => [newBook, ...prev]);
+    showToast(`Textbook "${book.titleBn || book.title}" uploaded successfully`, 'success');
+  };
+
+  const updateTextBook = (id: string, book: Partial<TextBook>) => {
+    setTextbooks((prev) => prev.map((b) => (b.id === id ? { ...b, ...book } : b)));
+    showToast('Textbook updated successfully', 'success');
+  };
+
+  const deleteTextBook = (id: string) => {
+    setTextbooks((prev) => prev.filter((b) => b.id !== id));
+    showToast('Textbook deleted successfully', 'info');
+  };
+
+  // Mock Test & Question Handlers
+  const startMockTest = (test: MockTest) => {
+    setActiveTest(test);
+    setCurrentView('active_mock_test');
+  };
+
+  const exitMockTest = () => {
+    setActiveTest(null);
+    setCurrentView('mock_tests');
+  };
+
+  const saveOngoingAttempt = (attempt: OngoingTestAttempt) => {
+    setOngoingAttempt(attempt);
+  };
+
+  const clearOngoingAttempt = () => {
+    setOngoingAttempt(null);
+    localStorage.removeItem(STORAGE_KEYS.ONGOING_ATTEMPT);
+  };
+
+  const submitMockTest = (test: MockTest, answers: Record<string, string>, timeTakenSeconds: number): TestResult => {
+    // Determine the list of questions for this test
+    const testQuestions: Question[] = test.questions && test.questions.length > 0
+      ? test.questions
+      : questions.filter((q) => test.questionIds?.includes(q.id));
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let unansweredCount = 0;
+    let obtainedMarks = 0;
+    const totalMarks = test.totalMarks || testQuestions.reduce((acc, q) => acc + (q.marks || 1), 0);
+
+    const questionReviews: QuestionAttemptReview[] = testQuestions.map((q) => {
+      const studentAns = answers[q.id];
+      const maxMarks = q.marks || 1;
+      let isCorrect = false;
+
+      if (!studentAns) {
+        unansweredCount++;
+      } else {
+        const cleanStudent = studentAns.toString().trim().toLowerCase();
+        const cleanCorrect = (q.correctAnswer || '').toString().trim().toLowerCase();
+        if (cleanStudent === cleanCorrect) {
+          isCorrect = true;
+          correctCount++;
+          obtainedMarks += maxMarks;
+        } else {
+          wrongCount++;
+        }
+      }
+
+      return {
+        questionId: q.id,
+        questionText: q.questionBn || q.questionEn || '',
+        studentAnswer: studentAns || null,
+        correctAnswer: q.correctAnswer || '',
+        isCorrect,
+        marksAwarded: isCorrect ? maxMarks : 0,
+        maxMarks,
+        explanation: q.explanationBn || q.explanationEn,
+        options: q.options,
+        questionType: q.questionType,
+      };
+    });
+
+    const attemptedCount = correctCount + wrongCount;
+    const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+    const isPassed = percentage >= (test.passMarks ? (test.passMarks / totalMarks) * 100 : settings.defaultPassPercentage || 40);
+
+    // Derive student details
+    const student = currentUser.student;
+    const studentId = student?.studentId || `ETL-GUEST-${Math.floor(1000 + Math.random() * 9000)}`;
+    const studentName = student?.name || 'অতিথি শিক্ষার্থী (Guest Student)';
+
+    const resultId = `res_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const certificateId = isPassed ? `CERT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}` : undefined;
+
+    const newResult: TestResult = {
+      id: resultId,
+      testId: test.id,
+      testTitle: test.titleBn || test.title,
+      studentId,
+      studentName,
+      classId: test.classId,
+      subjectId: test.subjectId,
+      totalQuestions: testQuestions.length,
+      attempted: attemptedCount,
+      correct: correctCount,
+      wrong: wrongCount,
+      unanswered: unansweredCount,
+      totalMarks,
+      obtainedMarks,
+      percentage,
+      isPassed,
+      timeTakenSeconds,
+      submittedAt: new Date().toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+      isOffline: false,
+      studentAnswers: answers,
+      questionReviews,
+      certificateId,
+    };
+
+    // Calculate rank
+    const classResults = [...testResults.filter((r) => r.testId === test.id), newResult];
+    classResults.sort((a, b) => b.obtainedMarks - a.obtainedMarks || a.timeTakenSeconds - b.timeTakenSeconds);
+    const calculatedRank = classResults.findIndex((r) => r.id === newResult.id) + 1;
+    newResult.rank = calculatedRank;
+
+    // Save locally and sync to cloud
+    setTestResults((prev) => [newResult, ...prev]);
+    syncTestResult(newResult);
+
+    // Update attempts count on the test
+    setMockTests((prev) =>
+      prev.map((t) => (t.id === test.id ? { ...t, attemptsCount: (t.attemptsCount || 0) + 1 } : t))
+    );
+
+    clearOngoingAttempt();
+    setActiveTest(null);
+    setActiveResult(newResult);
+    showToast(`Test submitted! You scored ${obtainedMarks}/${totalMarks} (${percentage}%)`, 'success');
+    return newResult;
+  };
+
+  const enterOfflineTestResult = (resultData: Omit<TestResult, 'id' | 'submittedAt' | 'isOffline'>) => {
+    const resultId = `res_off_${Date.now()}`;
+    const newResult: TestResult = {
+      ...resultData,
+      id: resultId,
+      isOffline: true,
+      submittedAt: new Date().toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    };
+    setTestResults((prev) => [newResult, ...prev]);
+    syncTestResult(newResult);
+    showToast('Offline test result recorded successfully', 'success');
+  };
+
+  const openTestResult = (result: TestResult) => {
+    setActiveResult(result);
+  };
+
+  const closeTestResult = () => {
+    setActiveResult(null);
+  };
+
+  const openCertificate = (result: TestResult) => {
+    setActiveCertificate(result);
+  };
+
+  const closeCertificate = () => {
+    setActiveCertificate(null);
+  };
+
+  const addQuestion = (q: Omit<Question, 'id' | 'createdAt'>) => {
+    const id = `q_c${q.classId}_${Date.now().toString().slice(-6)}`;
+    const newQ: Question = {
+      ...q,
+      id,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setQuestions((prev) => [newQ, ...prev]);
+    showToast('Question added to Question Bank', 'success');
+  };
+
+  const updateQuestion = (id: string, q: Partial<Question>) => {
+    setQuestions((prev) => prev.map((item) => (item.id === id ? { ...item, ...q } : item)));
+    showToast('Question updated successfully', 'success');
+  };
+
+  const deleteQuestion = (id: string) => {
+    setQuestions((prev) => prev.filter((item) => item.id !== id));
+    showToast('Question deleted from Question Bank', 'info');
+  };
+
+  const addMockTest = (test: Omit<MockTest, 'id' | 'createdAt'>) => {
+    const id = `test_c${test.classId}_${Date.now().toString().slice(-6)}`;
+    const newTest: MockTest = {
+      ...test,
+      id,
+      createdAt: new Date().toISOString().split('T')[0],
+      attemptsCount: 0,
+    };
+    setMockTests((prev) => [newTest, ...prev]);
+    showToast(`Mock Test "${test.titleBn || test.title}" published`, 'success');
+  };
+
+  const updateMockTest = (id: string, test: Partial<MockTest>) => {
+    setMockTests((prev) => prev.map((item) => (item.id === id ? { ...item, ...test } : item)));
+    showToast('Mock Test updated successfully', 'success');
+  };
+
+  const deleteMockTest = (id: string) => {
+    setMockTests((prev) => prev.filter((item) => item.id !== id));
+    showToast('Mock Test deleted', 'info');
+  };
+
+  const deleteTestResult = (id: string) => {
+    setTestResults((prev) => prev.filter((item) => item.id !== id));
+    showToast('Test result removed', 'info');
+  };
+
+  const registerStudent = (data: {
+    name: string;
+    classId: number;
+    section?: string;
+    rollNumber: string;
+    schoolName?: string;
+    guardianName?: string;
+    mobileNumber: string;
+    email?: string;
+    password?: string;
+  }): StudentProfile => {
+    const year = new Date().getFullYear();
+    const count = students.length + 1;
+    const studentId = `ETL-${year}-${(1000 + count).toString()}`;
+    const newStudent: StudentProfile = {
+      ...data,
+      id: `std-${Date.now()}`,
+      studentId,
+      joinDate: new Date().toISOString().split('T')[0],
+      admissionDate: new Date().toISOString().split('T')[0],
+      password: data.password || 'student123',
+    };
+    setStudents((prev) => [newStudent, ...prev]);
+    // Auto-login newly registered student
+    setCurrentUser({ role: 'student', student: newStudent });
+    setSelectedClassId(newStudent.classId);
+    setCurrentView('student_portal');
+    showToast(`Registration complete! Your Student ID is ${studentId}`, 'success');
+    return newStudent;
+  };
+
   const t = translations[language] || translations.en;
 
   return (
@@ -689,6 +1069,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsSearchOpen,
         isLoginOpen,
         setIsLoginOpen,
+        isRegisterOpen,
+        setIsRegisterOpen,
         currentUser,
         loginAsAdmin,
         loginAsStudent,
@@ -705,6 +1087,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fees,
         exams,
         marks,
+        textbooks,
+        addTextBook,
+        updateTextBook,
+        deleteTextBook,
         addStudyMaterial,
         updateStudyMaterial,
         deleteStudyMaterial,
@@ -735,6 +1121,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         enterStudentMark,
         updateMark,
         deleteMark,
+        questions,
+        mockTests,
+        testResults,
+        ongoingAttempt,
+        activeTest,
+        activeResult,
+        activeCertificate,
+        startMockTest,
+        exitMockTest,
+        saveOngoingAttempt,
+        clearOngoingAttempt,
+        submitMockTest,
+        enterOfflineTestResult,
+        openTestResult,
+        closeTestResult,
+        openCertificate,
+        closeCertificate,
+        addQuestion,
+        updateQuestion,
+        deleteQuestion,
+        addMockTest,
+        updateMockTest,
+        deleteMockTest,
+        deleteTestResult,
+        registerStudent,
         showToast,
         toasts,
       }}

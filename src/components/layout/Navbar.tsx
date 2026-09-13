@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Award,
   Book,
   BookOpen,
   Calendar,
@@ -12,11 +13,14 @@ import {
   Moon,
   Search,
   ShieldCheck,
+  Sparkles,
   Sun,
+  Trophy,
   User,
   X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { Logo } from '../common/Logo';
 import { PWAInstallButton } from '../common/PWAInstallButton';
 
 export const Navbar: React.FC = () => {
@@ -44,18 +48,19 @@ export const Navbar: React.FC = () => {
 
   const handleWhatsAppTeacher = () => {
     const cleanNumber = (settings.whatsappNumber || '917384491269').replace(/[^0-9]/g, '');
-    const msg = encodeURIComponent('Hello EASY TO LEARN, I would like guidance on study materials & admissions.');
+    const msg = encodeURIComponent('Hello EASY TO LEARN, I would like guidance on West Bengal Board mock tests & admissions.');
     window.open(`https://wa.me/${cleanNumber}?text=${msg}`, '_blank');
   };
 
   const navItems = [
     { id: 'home', label: t.home, icon: Home },
+    { id: 'mock_tests', label: language === 'bn' ? 'মক টেস্ট' : 'Mock Tests', icon: Award, highlight: true },
+    { id: 'practice', label: language === 'bn' ? 'অনুশীলন' : 'Practice', icon: Sparkles },
+    { id: 'results', label: language === 'bn' ? 'ফলাফল' : 'Results', icon: Trophy },
     { id: 'classes', label: t.classes, icon: GraduationCap },
     { id: 'books', label: t.books, icon: Book },
     { id: 'materials', label: t.studyMaterials, icon: BookOpen },
-    { id: 'notices', label: t.notices, icon: Calendar },
     { id: 'homework', label: t.homework, icon: FileText },
-    { id: 'question_papers', label: t.questionPapers, icon: FileText },
     { id: 'teacher_profile', label: t.teacherProfile, icon: User },
   ];
 
@@ -66,22 +71,20 @@ export const Navbar: React.FC = () => {
           {/* Brand Logo & Name */}
           <div
             onClick={() => handleNav('home')}
-            className="flex items-center gap-3 cursor-pointer select-none group shrink-0"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-indigo-600 border border-indigo-500/50 flex items-center justify-center text-white font-extrabold text-lg sm:text-xl shadow-md group-hover:bg-indigo-500 transition-all">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <Logo size="md" showText={false} />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg sm:text-2xl tracking-tight text-white group-hover:text-indigo-200 transition">
+                <span className="font-black text-lg sm:text-2xl tracking-tight text-white group-hover:text-amber-300 transition">
                   {settings.centreName || 'EASY TO LEARN'}
                 </span>
-                <span className="hidden xl:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-800 text-indigo-200 border border-indigo-700">
+                <span className="hidden xl:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950">
                   Classes 1–10
                 </span>
               </div>
-              <p className="text-xs text-indigo-300 italic truncate max-w-[180px] sm:max-w-none">
-                {language === 'bn' && settings.taglineBn ? settings.taglineBn : (settings.tagline || 'Learn Easily, Learn Smartly')}
+              <p className="text-[11px] sm:text-xs text-indigo-200 font-medium truncate max-w-[190px] sm:max-w-none">
+                {settings.subtitle || 'West Bengal Board Mock Test Portal'}
               </p>
             </div>
           </div>
@@ -95,13 +98,15 @@ export const Navbar: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => handleNav(item.id)}
-                  className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                     isActive
-                      ? 'bg-indigo-800 text-white shadow-xs font-semibold'
+                      ? 'bg-indigo-700 text-white shadow-xs font-bold ring-1 ring-white/20'
+                      : item.highlight
+                      ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 border border-amber-400/30 font-bold'
                       : 'text-indigo-100 hover:text-white hover:bg-indigo-800/80'
                   }`}
                 >
-                  <Icon className="w-4 h-4 opacity-80" />
+                  <Icon className={`w-4 h-4 ${item.highlight ? 'text-amber-300' : 'opacity-80'}`} />
                   <span>{item.label}</span>
                 </button>
               );

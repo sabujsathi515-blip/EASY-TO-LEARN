@@ -1,6 +1,6 @@
 {
   "name": "EASY TO LEARN",
-  "description": "Complete Education Management & Study Web App for Classes 1 to 10 with read-only study materials, notes, question papers, homework, and coaching administration.",
+  "description": "West Bengal Board Mock Test Portal for Classes 1 to 10 with online examinations, countdown timer, question bank, auto-grading, answer reviews, offline printable papers, student results, and admin coaching management.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -38,20 +38,22 @@ export const HeroBanner: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Heading & Quick Actions */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>{settings.academicYear} Academic Session Open • Admissions & Batches</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-900 dark:text-amber-300 border border-amber-500/30 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span>West Bengal Board Mock Test Portal • Classes 1–10 (WBBSE & WBBPE)</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
               {settings.centreName}{' '}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-indigo-900 dark:from-indigo-400 dark:to-indigo-200">
-                {language === 'bn' && settings.taglineBn ? settings.taglineBn : settings.tagline}
+                {settings.subtitle || 'West Bengal Board Mock Test Portal'}
               </span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-              {t.welcomeSub}
+              {language === 'bn'
+                ? 'পশ্চিমবঙ্গ মধ্যশিক্ষা পর্ষদ ও প্রাথমিক শিক্ষা পর্ষদের শিক্ষার্থীদের জন্য অনলাইন মক টেস্ট, স্বয়ংক্রিয় ফলাফল, ডিজিটাল সার্টিফিকেট ও ওএমআর শিট প্রিন্ট সুবিধা।'
+                : 'Free and comprehensive West Bengal Board mock tests with timer, instant results, downloadable certificates, and printable OMR exam sheets.'}
             </p>
 
             {/* Teacher Badge Bar */}
@@ -75,31 +77,31 @@ export const HeroBanner: React.FC = () => {
             {/* Main Action Buttons */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
               <button
-                onClick={() => setCurrentView('materials')}
-                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-indigo-500/25 transition-all flex items-center gap-2"
+                onClick={() => setCurrentView('mock_tests')}
+                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md hover:shadow-indigo-500/25 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
-                <BookOpen className="w-4 h-4" />
-                <span>Explore Study Materials</span>
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>{language === 'bn' ? 'মক টেস্ট শুরু করুন' : 'Start Mock Test'}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
 
+              <button
+                onClick={() => setCurrentView('practice')}
+                className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-4 h-4 text-slate-950" />
+                <span>{language === 'bn' ? 'অনুশীলন মোড (Practice)' : 'Practice Mode'}</span>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('books')}
+                className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm transition flex items-center gap-2 border border-slate-200 dark:border-slate-700 cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-500" />
+                <span>{language === 'bn' ? 'সকল পাঠ্যবই' : 'WB Board Books'}</span>
+              </button>
+
               <PWAInstallButton variant="hero" />
-
-              <button
-                onClick={handleWhatsApp}
-                className="px-5 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm shadow-md hover:shadow-green-500/25 transition-all flex items-center gap-2"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp Enquiry</span>
-              </button>
-
-              <button
-                onClick={() => setCurrentView('question_papers')}
-                className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm transition flex items-center gap-2 border border-slate-200 dark:border-slate-700"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Past Papers & Tests</span>
-              </button>
             </div>
           </div>
 

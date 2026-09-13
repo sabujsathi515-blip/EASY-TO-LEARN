@@ -5,23 +5,36 @@ import {
   CheckCircle,
   ChevronRight,
   Download,
+  Edit2,
   ExternalLink,
   Eye,
+  FileCheck,
   FileText,
   Filter,
   GraduationCap,
   Layers,
+  Plus,
   Search,
   Sparkles,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { WB_TEXTBOOKS } from '../../data/wbTextBooksData';
 import { StudyMaterial, TextBook } from '../../types';
 import { BackButton } from '../common/BackButton';
 
 export const TextBookSection: React.FC = () => {
-  const { openDocumentViewer, setSelectedClassId, language, t, showToast } = useApp();
+  const {
+    textbooks,
+    deleteTextBook,
+    currentUser,
+    setCurrentView,
+    openDocumentViewer,
+    setSelectedClassId,
+    language,
+    t,
+    showToast,
+  } = useApp();
 
   const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -31,7 +44,7 @@ export const TextBookSection: React.FC = () => {
 
   // Filter books based on class, category, board, and search query
   const filteredBooks = useMemo(() => {
-    return WB_TEXTBOOKS.filter((book) => {
+    return textbooks.filter((book) => {
       if (selectedClass !== 'all' && book.classId !== selectedClass) {
         return false;
       }
@@ -65,11 +78,14 @@ export const TextBookSection: React.FC = () => {
       }
       return true;
     });
-  }, [selectedClass, selectedCategory, selectedBoard, searchQuery]);
+  }, [textbooks, selectedClass, selectedCategory, selectedBoard, searchQuery]);
 
   // Open book in the app's protected Read-Only DocumentViewer
   const handleReadBook = (book: TextBook) => {
     setSelectedClassId(book.classId);
+
+    const isImage = book.fileUrl?.startsWith('data:image');
+    const hasFile = Boolean(book.fileUrl);
 
     // Convert textbook pages into StudyMaterial format for DocumentViewer
     const materialAdapter: StudyMaterial = {
@@ -79,7 +95,10 @@ export const TextBookSection: React.FC = () => {
       title: `${book.titleBn} (${book.title})`,
       titleBn: `${book.titleBn} - ${book.publisherBn}`,
       category: 'chapter_notes',
-      format: 'rich_notes',
+      format: hasFile ? (isImage ? 'image' : 'pdf') : 'rich_notes',
+      fileUrl: book.fileUrl,
+      fileName: book.fileName,
+      fileSize: book.fileSize,
       description: `${book.descriptionBn} (${book.board} Official Textbook)`,
       totalPages: book.pages && book.pages.length > 0 ? book.pages.length : 1,
       pages: book.pages && book.pages.length > 0 ? book.pages : [
@@ -100,7 +119,7 @@ ${book.chapters.map((c) => `### ${c.chapterNo}. ${c.titleBn} (${c.title})`).join
 *উৎস: পশ্চিমবঙ্গ সরকার শিক্ষা বিভাগ ও পর্ষদ অনুমোদিত পাঠ্যক্রম। পূর্ণাঙ্গ পাঠ্যপুস্তকের জন্য কোচিং ব্যাচ ও স্টাডি মেটেরিয়াল দেখুন।*`
         }
       ],
-      uploadDate: '2026-01-01',
+      uploadDate: book.uploadDate || '2026-01-01',
       author: book.publisherBn,
       viewCount: 142,
       tags: ['textbook', 'wb_board', book.board, `class_${book.classId}`],
@@ -108,7 +127,7 @@ ${book.chapters.map((c) => `### ${c.chapterNo}. ${c.titleBn} (${c.title})`).join
     };
 
     openDocumentViewer(materialAdapter);
-    showToast(`${book.titleBn} খোলা হয়েছে (Read-Only Mode)`, 'success');
+    showToast(`${book.titleBn} খোলা হয়েছে`, 'success');
   };
 
   const categories = [
@@ -164,6 +183,19 @@ ${book.chapters.map((c) => `### ${c.chapterNo}. ${c.titleBn} (${c.title})`).join
                 সুরক্ষিত অনলাইন পড়ার সুবিধা
               </span>
             </div>
+
+            {/* Admin Management Action Bar */}
+            {currentUser?.role === 'admin' && (
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => setCurrentView('admin')}
+                  className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>টিচার অ্যাডমিন: নতুন বই আপলোড ও পরিচালনা করুন</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -373,29 +405,54 @@ ${book.chapters.map((c) => `### ${c.chapterNo}. ${c.titleBn} (${c.title})`).join
                       {book.descriptionBn}
                     </p>
 
-                    <div className="text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2.5">
-                      <span className="font-medium text-slate-500 dark:text-slate-400">প্রকাশক: </span>
-                      <span>{book.publisherBn}</span>
+                    <div className="text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2.5 flex items-center justify-between">
+                      <div>
+                        <span className="font-medium text-slate-500 dark:text-slate-400">প্রকাশক: </span>
+                        <span>{book.publisherBn}</span>
+                      </div>
+                      {book.fileUrl && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                          <FileCheck className="w-3 h-3" />
+                          <span>PDF</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={() => handleReadBook(book)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>{language === 'bn' ? 'বইটি পড়ুন' : 'Read Book'}</span>
-                    </button>
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleReadBook(book)}
+                        className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'বইটি পড়ুন' : 'Read Book'}</span>
+                      </button>
 
-                    <button
-                      onClick={() => setActiveBookForChapters(book)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5"
-                    >
-                      <Layers className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{language === 'bn' ? 'সূচিপত্র' : 'Chapters'}</span>
-                    </button>
+                      <button
+                        onClick={() => setActiveBookForChapters(book)}
+                        className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{language === 'bn' ? 'সূচিপত্র' : 'Chapters'}</span>
+                      </button>
+                    </div>
+
+                    {currentUser?.role === 'admin' && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`আপনি কি "${book.titleBn}" বইটি ডিলিট করতে চান?`)) {
+                            deleteTextBook(book.id);
+                            showToast(`"${book.titleBn}" বইটি ডিলিট করা হয়েছে`, 'info');
+                          }
+                        }}
+                        className="w-full py-1.5 px-3 rounded-xl bg-red-50 hover:bg-red-500 text-red-600 hover:text-white dark:bg-red-950/40 text-[11px] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>বইটি মুছে ফেলুন (Admin Delete)</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

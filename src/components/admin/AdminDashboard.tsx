@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   AlertCircle,
   Award,
+  Book,
   BookOpen,
   Calendar,
   CheckCircle2,
@@ -34,6 +35,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { BackButton } from '../common/BackButton';
+import { AdminTextBooks } from './AdminTextBooks';
+import { MockTestAdmin } from '../exam/MockTestAdmin';
 import {
   AttendanceRecord,
   Chapter,
@@ -100,6 +103,8 @@ export const AdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<
     | 'materials'
+    | 'books'
+    | 'mock_tests'
     | 'curriculum'
     | 'students'
     | 'attendance'
@@ -107,7 +112,7 @@ export const AdminDashboard: React.FC = () => {
     | 'exams'
     | 'notices'
     | 'settings'
-  >('materials');
+  >('mock_tests');
 
   // Selected class in Admin
   const [adminClassId, setAdminClassId] = useState<number>(10);
@@ -588,7 +593,9 @@ export const AdminDashboard: React.FC = () => {
       {/* Admin Sub-Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl text-xs font-bold">
         {[
+          { id: 'mock_tests', label: 'মক টেস্ট ও প্রশ্নব্যাংক (Mock Tests & Question Bank)', icon: Award },
           { id: 'materials', label: 'Study Materials & Upload', icon: BookOpen },
+          { id: 'books', label: 'WB Board Books (সকল বই)', icon: Book },
           { id: 'curriculum', label: 'Subjects & Chapters', icon: Layers },
           { id: 'students', label: 'Student Directory', icon: Users },
           { id: 'attendance', label: 'Attendance Register', icon: UserCheck },
@@ -913,6 +920,16 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* WB BOARD TEXTBOOKS TAB (সকল বই আপলোড ও ডিলিট) */}
+      {/* ========================================================= */}
+      {activeTab === 'books' && (
+        <AdminTextBooks
+          adminClassId={adminClassId}
+          onSelectClass={setAdminClassId}
+        />
       )}
 
       {/* ========================================================= */}
@@ -2055,6 +2072,11 @@ export const AdminDashboard: React.FC = () => {
           </button>
         </form>
       )}
+
+      {/* ========================================================= */}
+      {/* 10. MOCK TESTS & QUESTION BANK MANAGEMENT TAB */}
+      {/* ========================================================= */}
+      {activeTab === 'mock_tests' && <MockTestAdmin />}
 
       {/* ========================================================= */}
       {/* MODAL: EDIT STUDY MATERIAL */}

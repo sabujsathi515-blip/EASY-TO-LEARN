@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Book, BookOpen, FileText, Search, Sparkles, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { WB_TEXTBOOKS } from '../../data/wbTextBooksData';
 import { StudyMaterial, TextBook } from '../../types';
 
 export const SearchModal: React.FC = () => {
@@ -9,6 +8,7 @@ export const SearchModal: React.FC = () => {
     isSearchOpen,
     setIsSearchOpen,
     studyMaterials,
+    textbooks,
     subjects,
     chapters,
     classes,
@@ -68,7 +68,7 @@ export const SearchModal: React.FC = () => {
   const matchingBooks = useMemo(() => {
     if (!query.trim() && selectedClassFilter === 'all') return [];
     const terms = query.toLowerCase().split(' ').filter(Boolean);
-    return WB_TEXTBOOKS.filter((b) => {
+    return textbooks.filter((b) => {
       if (selectedClassFilter !== 'all' && b.classId !== selectedClassFilter) return false;
       if (terms.length === 0) return true;
       const searchable = [
@@ -90,7 +90,7 @@ export const SearchModal: React.FC = () => {
         .toLowerCase();
       return terms.every((t) => searchable.includes(t));
     });
-  }, [query, selectedClassFilter]);
+  }, [query, selectedClassFilter, textbooks]);
 
   if (!isSearchOpen) return null;
 

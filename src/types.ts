@@ -26,17 +26,154 @@ export type ExamType =
 
 export interface StudentProfile {
   id: string;
-  studentId: string;
+  studentId: string; // e.g. ETL-2026-1001
   name: string;
   classId: number; // 1 to 10
+  section?: string;
   rollNumber: string | number;
+  schoolName?: string;
+  guardianName?: string;
   mobileNumber: string;
+  email?: string;
   password?: string;
   joinDate?: string;
   admissionDate?: string;
   avatarUrl?: string;
-  guardianName?: string;
 }
+
+export type QuestionType =
+  | 'mcq'
+  | 'true_false'
+  | 'fill_blank'
+  | 'short_answer'
+  | 'match';
+
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface QuestionOption {
+  id: string;
+  textBn: string;
+  textEn?: string;
+}
+
+export interface MatchPair {
+  id: string;
+  left: string;
+  right: string;
+}
+
+export interface Question {
+  id: string;
+  classId: number; // 1 to 10
+  subjectId: string;
+  chapter?: string;
+  topic?: string;
+  difficulty: QuestionDifficulty;
+  questionType: QuestionType;
+  questionBn: string;
+  questionEn?: string;
+  options?: QuestionOption[];
+  correctAnswer?: string; // option id (e.g. 'A', 'B', 'C', 'D' or true/false or exact string)
+  matchPairs?: MatchPair[];
+  marks: number;
+  explanationBn?: string;
+  explanationEn?: string;
+  imageUrl?: string;
+  tags?: string[];
+  createdAt?: string;
+}
+
+export type TestType = 'online' | 'offline' | 'both';
+
+export interface AntiCheatingSettings {
+  fullScreen: boolean;
+  tabSwitchWarning: boolean;
+  randomizeQuestions: boolean;
+  randomizeOptions: boolean;
+  timerAutoSubmit: boolean;
+  preventMultipleSubmissions?: boolean;
+}
+
+export interface MockTest {
+  id: string;
+  title: string;
+  titleBn: string;
+  classId: number; // 1 to 10
+  subjectId: string;
+  chapter?: string;
+  description?: string;
+  descriptionBn?: string;
+  totalQuestions: number;
+  totalMarks: number;
+  durationMinutes: number; // e.g. 30
+  passMarks: number; // e.g. 12
+  testType: TestType;
+  startDate?: string;
+  endDate?: string;
+  isPractice?: boolean;
+  isPublished?: boolean;
+  questionIds: string[];
+  questions?: Question[];
+  antiCheating: AntiCheatingSettings;
+  instructionsBn?: string[];
+  instructionsEn?: string[];
+  createdAt: string;
+  attemptsCount?: number;
+}
+
+export interface QuestionAttemptReview {
+  questionId: string;
+  questionText: string;
+  studentAnswer: string | null;
+  correctAnswer: string;
+  isCorrect: boolean;
+  marksAwarded: number;
+  maxMarks: number;
+  explanation?: string;
+  options?: QuestionOption[];
+  questionType: QuestionType;
+}
+
+export interface TestResult {
+  id: string;
+  testId: string;
+  testTitle: string;
+  studentId: string;
+  studentName: string;
+  classId: number;
+  subjectId: string;
+  totalQuestions: number;
+  attempted: number;
+  correct: number;
+  wrong: number;
+  unanswered: number;
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  isPassed: boolean;
+  timeTakenSeconds: number;
+  submittedAt: string;
+  isOffline?: boolean;
+  remarks?: string;
+  studentAnswers: Record<string, string>; // questionId -> selected answer
+  questionReviews?: QuestionAttemptReview[];
+  rank?: number;
+  certificateId?: string;
+}
+
+export interface OngoingTestAttempt {
+  testId: string;
+  studentId: string;
+  answers: Record<string, string>;
+  markedForReview: string[];
+  currentQuestionIndex: number;
+  timeRemainingSeconds: number;
+  tabSwitchCount: number;
+  startedAt: string;
+  lastSavedAt: string;
+}
+
+export type NetworkSyncStatus = 'online' | 'offline' | 'syncing' | 'synced';
 
 export interface AdminProfile {
   id: string;
@@ -224,6 +361,8 @@ export interface StudentMark {
 export interface AppSettings {
   centreName: string;
   centreNameBn?: string;
+  subtitle: string;
+  subtitleBn?: string;
   tagline: string;
   taglineBn?: string;
   teacherName: string;
@@ -234,6 +373,8 @@ export interface AppSettings {
   contactNumber: string;
   contactPhone?: string;
   whatsappNumber: string;
+  email?: string;
+  website?: string;
   address: string;
   addressBn?: string;
   academicYear: string;
@@ -241,6 +382,11 @@ export interface AppSettings {
   language?: Language;
   philosophy?: string;
   messageToStudents?: string;
+  rankingEnabled: boolean;
+  certificateEnabled: boolean;
+  offlineModeEnabled: boolean;
+  defaultPassPercentage: number;
+  examInstructionsBn: string[];
 }
 
 export interface TextBookChapter {
@@ -273,4 +419,8 @@ export interface TextBook {
   officialPortalUrl?: string;
   chapters: TextBookChapter[];
   pages: MaterialPage[];
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: string;
+  uploadDate?: string;
 }

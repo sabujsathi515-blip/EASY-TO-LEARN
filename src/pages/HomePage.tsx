@@ -78,6 +78,56 @@ export const HomePage: React.FC = () => {
       {/* Classes 1 to 10 Structured Section */}
       <ClassSection />
 
+      {/* Official Mock Test Portal Spotlight */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-amber-400/30">
+          <div className="space-y-3 text-center md:text-left z-10 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-950 text-amber-300 shadow-md">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>WEST BENGAL BOARD MOCK TEST PORTAL</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              EASY TO LEARN • অনলাইন মক টেস্ট পোর্টাল
+            </h2>
+            <p className="text-xs sm:text-sm text-amber-50 leading-relaxed font-medium">
+              ১ম থেকে ১০ম শ্রেণির বাংলা, ইংরেজি, গণিত, বিজ্ঞান ও সমাজবিজ্ঞান বিষয়ের অধ্যায়ভিত্তিক ও পূর্ণাঙ্গ মক টেস্ট। স্বয়ংক্রিয় নম্বর গণনা, ওএমআর শিট প্রিন্ট এবং ডাউনলোডযোগ্য সার্টিফিকেট!
+            </p>
+            <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+              <span className="px-2.5 py-1 rounded-lg bg-black/20 text-white backdrop-blur-xs">
+                ⏱️ টাইমার মোড
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-black/20 text-white backdrop-blur-xs">
+                🛡️ ট্যাব পরিবর্তন ডিটেকশন
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-black/20 text-white backdrop-blur-xs">
+                📜 বাংলা সার্টিফিকেট
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-black/20 text-white backdrop-blur-xs">
+                🖨️ ওএমআর শিট ডাউনলোড
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 z-10 shrink-0">
+            <button
+              onClick={() => setCurrentView('mock_tests')}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-900 text-amber-300 hover:text-amber-200 font-extrabold text-sm shadow-xl transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Award className="w-5 h-5 text-amber-400" />
+              <span>মক টেস্ট দিন (Take Test)</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentView('practice')}
+              className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-sm backdrop-blur-xs transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>অনুশীলন (Practice)</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Official WB Board Textbooks Spotlight Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border border-indigo-700/60 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
