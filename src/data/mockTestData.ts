@@ -1,6 +1,25 @@
 import { MockTest, Question, TestResult } from '../types';
+import { CLASS_7_ENV_QUESTIONS, CLASS_7_ENV_MOCK_TEST } from './class7EnvMockTestData';
+import { CLASS_7_HIST_QUESTIONS, CLASS_7_HIST_MOCK_TEST } from './class7HistoryMockTestData';
+import { CLASS_7_ENG_QUESTIONS, CLASS_7_ENG_MOCK_TEST } from './class7EnglishMockTestData';
+import { CLASS_7_GEOG_QUESTIONS, CLASS_7_GEOG_MOCK_TEST } from './class7GeographyMockTestData';
+import { CLASS_7_MATH_QUESTIONS, CLASS_7_MATH_MOCK_TEST } from './class7MathMockTestData';
+import { CLASS_7_BENG_QUESTIONS, CLASS_7_BENG_MOCK_TEST } from './class7BengaliMockTestData';
+
+export { CLASS_7_ENV_QUESTIONS, CLASS_7_ENV_MOCK_TEST };
+export { CLASS_7_HIST_QUESTIONS, CLASS_7_HIST_MOCK_TEST };
+export { CLASS_7_ENG_QUESTIONS, CLASS_7_ENG_MOCK_TEST };
+export { CLASS_7_GEOG_QUESTIONS, CLASS_7_GEOG_MOCK_TEST };
+export { CLASS_7_MATH_QUESTIONS, CLASS_7_MATH_MOCK_TEST };
+export { CLASS_7_BENG_QUESTIONS, CLASS_7_BENG_MOCK_TEST };
 
 export const INITIAL_QUESTIONS: Question[] = [
+  ...CLASS_7_BENG_QUESTIONS,
+  ...CLASS_7_MATH_QUESTIONS,
+  ...CLASS_7_GEOG_QUESTIONS,
+  ...CLASS_7_ENG_QUESTIONS,
+  ...CLASS_7_HIST_QUESTIONS,
+  ...CLASS_7_ENV_QUESTIONS,
   // =================== CLASS 10 (MADHYAMIK) ===================
   {
     id: 'q_c10_ps_01',
@@ -453,6 +472,12 @@ export const INITIAL_QUESTIONS: Question[] = [
 ];
 
 export const INITIAL_MOCK_TESTS: MockTest[] = [
+  CLASS_7_BENG_MOCK_TEST,
+  CLASS_7_MATH_MOCK_TEST,
+  CLASS_7_GEOG_MOCK_TEST,
+  CLASS_7_ENG_MOCK_TEST,
+  CLASS_7_HIST_MOCK_TEST,
+  CLASS_7_ENV_MOCK_TEST,
   {
     id: 'test_c10_ps_01',
     title: 'Madhyamik Physical Science Model Mock Test',

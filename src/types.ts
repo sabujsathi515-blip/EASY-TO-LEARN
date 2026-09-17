@@ -172,9 +172,18 @@ export interface TestResult {
   certificateId?: string;
 }
 
+export interface CandidateInfo {
+  name: string;
+  rollNo?: string;
+  school?: string;
+}
+
 export interface OngoingTestAttempt {
   testId: string;
   studentId: string;
+  studentName?: string;
+  studentRoll?: string;
+  studentSchool?: string;
   answers: Record<string, string>;
   markedForReview: string[];
   currentQuestionIndex: number;

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MockTest } from '../../types';
+import { CandidateNameModal } from './CandidateNameModal';
 
 interface Props {
   onSelectPrintOffline: (test: MockTest) => void;
@@ -40,6 +41,7 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [selectedTestForCandidate, setSelectedTestForCandidate] = useState<MockTest | null>(null);
 
   // Filtered mock tests
   const filteredTests = useMemo(() => {
@@ -140,7 +142,15 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
               onClick={() => {
                 const found = mockTests.find((t) => t.id === ongoingAttempt.testId);
                 if (found) {
-                  startMockTest(found);
+                  if (ongoingAttempt.studentName) {
+                    startMockTest(found, {
+                      name: ongoingAttempt.studentName,
+                      rollNo: ongoingAttempt.studentRoll,
+                      school: ongoingAttempt.studentSchool,
+                    });
+                  } else {
+                    setSelectedTestForCandidate(found);
+                  }
                 }
               }}
               className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer"
@@ -321,7 +331,7 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
               <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2">
                 {test.testType !== 'offline' && (
                   <button
-                    onClick={() => startMockTest(test)}
+                    onClick={() => setSelectedTestForCandidate(test)}
                     className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>অনলাইন পরীক্ষা শুরু করুন</span>
@@ -363,6 +373,20 @@ export const MockTestPortal: React.FC<Props> = ({ onSelectPrintOffline }) => {
           <p className="text-xs text-slate-500 mt-1">দয়া করে ফিল্টার পরিবর্তন করুন বা নতুন টেস্ট তৈরি করুন।</p>
         </div>
       )}
+
+      {/* Candidate Name & Verification Modal */}
+      <CandidateNameModal
+        isOpen={!!selectedTestForCandidate}
+        test={selectedTestForCandidate}
+        onClose={() => setSelectedTestForCandidate(null)}
+        onStart={(candidateInfo) => {
+          if (selectedTestForCandidate) {
+            const testToStart = selectedTestForCandidate;
+            setSelectedTestForCandidate(null);
+            startMockTest(testToStart, candidateInfo);
+          }
+        }}
+      />
     </div>
   );
 };

@@ -291,7 +291,13 @@ export const StudentPortal: React.FC = () => {
             <button
               onClick={() => {
                 const found = mockTests.find((t) => t.id === ongoingAttempt.testId);
-                if (found) startMockTest(found);
+                if (found) {
+                  startMockTest(found, {
+                    name: student.name,
+                    rollNo: student.rollNumber ? String(student.rollNumber) : student.studentId,
+                    school: student.schoolName,
+                  });
+                }
               }}
               className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             >

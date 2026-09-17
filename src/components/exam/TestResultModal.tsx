@@ -41,7 +41,10 @@ export const TestResultModal: React.FC<Props> = ({ result, onClose }) => {
   const handleRetake = () => {
     if (matchingTest) {
       onClose();
-      startMockTest(matchingTest);
+      startMockTest(matchingTest, {
+        name: result.studentName,
+        rollNo: result.studentId,
+      });
     } else {
       showToast('এই টেস্টটি বর্তমানে উপলব্ধ নয়', 'warning');
     }

@@ -21,6 +21,7 @@ import {
   TextBook,
   Theme,
   UserRole,
+  CandidateInfo,
 } from '../types';
 import { WB_TEXTBOOKS } from '../data/wbTextBooksData';
 import {
@@ -171,7 +172,9 @@ interface AppContextType {
   activeTest: MockTest | null;
   activeResult: TestResult | null;
   activeCertificate: TestResult | null;
-  startMockTest: (test: MockTest) => void;
+  currentCandidate: CandidateInfo | null;
+  setCurrentCandidate: (info: CandidateInfo | null) => void;
+  startMockTest: (test: MockTest, candidateInfo?: CandidateInfo) => void;
   exitMockTest: () => void;
   saveOngoingAttempt: (attempt: OngoingTestAttempt) => void;
   clearOngoingAttempt: () => void;
@@ -386,12 +389,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Mock Test State
   const [questions, setQuestions] = useState<Question[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.QUESTIONS);
-    return saved ? JSON.parse(saved) : INITIAL_QUESTIONS;
+    if (!saved) return INITIAL_QUESTIONS;
+    try {
+      const parsed: Question[] = JSON.parse(saved);
+      const existingIds = new Set(parsed.map((q) => q.id));
+      const missing = INITIAL_QUESTIONS.filter((q) => !existingIds.has(q.id));
+      return missing.length > 0 ? [...parsed, ...missing] : parsed;
+    } catch {
+      return INITIAL_QUESTIONS;
+    }
   });
 
   const [mockTests, setMockTests] = useState<MockTest[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.MOCK_TESTS);
-    return saved ? JSON.parse(saved) : INITIAL_MOCK_TESTS;
+    if (!saved) return INITIAL_MOCK_TESTS;
+    try {
+      const parsed: MockTest[] = JSON.parse(saved);
+      const existingIds = new Set(parsed.map((t) => t.id));
+      const missing = INITIAL_MOCK_TESTS.filter((t) => !existingIds.has(t.id));
+      return missing.length > 0 ? [...missing, ...parsed] : parsed;
+    } catch {
+      return INITIAL_MOCK_TESTS;
+    }
   });
 
   const [testResults, setTestResults] = useState<TestResult[]>(() => {
@@ -407,6 +426,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTest, setActiveTest] = useState<MockTest | null>(null);
   const [activeResult, setActiveResult] = useState<TestResult | null>(null);
   const [activeCertificate, setActiveCertificate] = useState<TestResult | null>(null);
+  const [currentCandidate, setCurrentCandidate] = useState<CandidateInfo | null>(() => {
+    try {
+      const saved = localStorage.getItem('etl_student_candidate_info');
+      if (saved) return JSON.parse(saved);
+      const name = localStorage.getItem('etl_student_candidate_name');
+      if (name) return { name };
+    } catch {
+      // ignore
+    }
+    return null;
+  });
 
   // Toasts
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -808,7 +838,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Mock Test & Question Handlers
-  const startMockTest = (test: MockTest) => {
+  const startMockTest = (test: MockTest, candidateInfo?: CandidateInfo) => {
+    if (candidateInfo) {
+      setCurrentCandidate(candidateInfo);
+      try {
+        localStorage.setItem('etl_student_candidate_info', JSON.stringify(candidateInfo));
+        localStorage.setItem('etl_student_candidate_name', candidateInfo.name);
+      } catch {
+        // ignore
+      }
+    }
     setActiveTest(test);
     setCurrentView('active_mock_test');
   };
@@ -878,8 +917,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Derive student details
     const student = currentUser.student;
-    const studentId = student?.studentId || `ETL-GUEST-${Math.floor(1000 + Math.random() * 9000)}`;
-    const studentName = student?.name || 'অতিথি শিক্ষার্থী (Guest Student)';
+    const studentName = currentCandidate?.name?.trim() || student?.name?.trim() || 'অতিথি শিক্ষার্থী (Guest Student)';
+    const studentId = currentCandidate?.rollNo?.trim() || student?.rollNo || student?.studentId || `ETL-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const resultId = `res_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const certificateId = isPassed ? `CERT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}` : undefined;
@@ -1135,6 +1174,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeTest,
         activeResult,
         activeCertificate,
+        currentCandidate,
+        setCurrentCandidate,
         startMockTest,
         exitMockTest,
         saveOngoingAttempt,

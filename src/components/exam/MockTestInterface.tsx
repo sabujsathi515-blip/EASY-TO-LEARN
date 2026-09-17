@@ -15,9 +15,12 @@ import {
   ShieldAlert,
   LogOut,
   Sparkles,
+  User,
+  AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { MockTest, Question, OngoingTestAttempt } from '../../types';
+import { MockTest, Question, OngoingTestAttempt, CandidateInfo } from '../../types';
 import confetti from 'canvas-confetti';
 
 interface Props {
@@ -34,7 +37,30 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
     ongoingAttempt,
     showToast,
     currentUser,
+    currentCandidate,
+    setCurrentCandidate,
   } = useApp();
+
+  const candidateName =
+    currentCandidate?.name?.trim() ||
+    ongoingAttempt?.studentName?.trim() ||
+    currentUser.student?.name?.trim() ||
+    '';
+
+  const [hasStartedWithCandidate, setHasStartedWithCandidate] = useState<boolean>(
+    Boolean(candidateName)
+  );
+  const [promptName, setPromptName] = useState<string>(candidateName);
+  const [promptRoll, setPromptRoll] = useState<string>(
+    currentCandidate?.rollNo ||
+    ongoingAttempt?.studentRoll ||
+    (currentUser.student?.rollNumber ? String(currentUser.student.rollNumber) : currentUser.student?.studentId) ||
+    ''
+  );
+  const [promptSchool, setPromptSchool] = useState<string>(
+    currentCandidate?.school || ongoingAttempt?.studentSchool || currentUser.student?.schoolName || ''
+  );
+  const [promptError, setPromptError] = useState<string>('');
 
   // Find the questions belonging to this test
   const testQuestions: Question[] = useMemo(() => {
@@ -110,6 +136,8 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
 
   // Countdown timer
   useEffect(() => {
+    if (!hasStartedWithCandidate) return;
+
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
@@ -124,14 +152,20 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [hasStartedWithCandidate]);
 
   // Periodic auto-save every 10 seconds
   useEffect(() => {
+    if (!hasStartedWithCandidate) return;
+
     const saveInterval = setInterval(() => {
+      const activeStudentName = currentCandidate?.name || promptName || currentUser.student?.name;
       const attempt: OngoingTestAttempt = {
         testId: test.id,
-        studentId: currentUser.student?.studentId || 'guest',
+        studentId: currentCandidate?.rollNo || currentUser.student?.studentId || 'guest',
+        studentName: activeStudentName,
+        studentRoll: currentCandidate?.rollNo || promptRoll,
+        studentSchool: currentCandidate?.school || promptSchool,
         answers,
         markedForReview,
         currentQuestionIndex: currentIndex,
@@ -144,7 +178,7 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
     }, 10000);
 
     return () => clearInterval(saveInterval);
-  }, [test.id, answers, markedForReview, currentIndex, timeRemaining, tabSwitchCount, currentUser]);
+  }, [test.id, answers, markedForReview, currentIndex, timeRemaining, tabSwitchCount, currentUser, currentCandidate, promptName, promptRoll, promptSchool, hasStartedWithCandidate]);
 
   const handleAutoSubmit = () => {
     showToast('সময় সমাপ্ত হয়েছে! টেস্ট স্বয়ংক্রিয়ভাবে জমা হচ্ছে...', 'warning');
@@ -219,6 +253,136 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
   const unansweredCount = testQuestions.length - answeredCount;
   const reviewCount = markedForReview.length;
 
+  const handleStartWithCandidate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = promptName.trim();
+    if (!trimmed) {
+      setPromptError('পরীক্ষা শুরু করতে অনুগ্রহ করে আপনার নাম লিখুন।');
+      return;
+    }
+    const info: CandidateInfo = {
+      name: trimmed,
+      rollNo: promptRoll.trim() || undefined,
+      school: promptSchool.trim() || undefined,
+    };
+    setCurrentCandidate(info);
+    try {
+      localStorage.setItem('etl_student_candidate_info', JSON.stringify(info));
+      localStorage.setItem('etl_student_candidate_name', info.name);
+    } catch {
+      // ignore
+    }
+    setHasStartedWithCandidate(true);
+    startTimeRef.current = Date.now();
+  };
+
+  // If candidate name has not been provided yet, show candidate entry screen
+  if (!hasStartedWithCandidate) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95">
+          <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700 p-6 text-white text-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-2.5">
+              <User className="w-6 h-6 text-indigo-200" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black">অনলাইন পরীক্ষা আরম্ভ করার পূর্বে নাম লিখুন</h2>
+            <p className="text-xs sm:text-sm text-indigo-100/90 mt-1">
+              মক টেস্টের ফলাফল এবং মেধা সনদপত্রে (Certificate) এই নামটি প্রদর্শিত হবে।
+            </p>
+          </div>
+
+          <div className="p-4 bg-indigo-50/70 dark:bg-slate-800/60 border-b border-indigo-100 dark:border-slate-800 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-bold text-[10px]">
+                Class {test.classId}
+              </span>
+              <span className="font-bold">{test.titleBn || test.title}</span>
+            </div>
+            <span className="font-medium text-slate-500">
+              {test.totalQuestions} প্রশ্ন • {test.durationMinutes} মিনিট
+            </span>
+          </div>
+
+          <form onSubmit={handleStartWithCandidate} className="p-6 space-y-4">
+            {promptError && (
+              <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>{promptError}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                পরীক্ষার্থীর নাম (Student Full Name) <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4 text-indigo-500" />
+                </div>
+                <input
+                  type="text"
+                  value={promptName}
+                  onChange={(e) => {
+                    setPromptName(e.target.value);
+                    if (promptError) setPromptError('');
+                  }}
+                  placeholder="আপনার পুরো নাম লিখুন (যেমন: রাহুল দাস / Rahul Sen)"
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  রোল নং / আইডি (ঐচ্ছিক)
+                </label>
+                <input
+                  type="text"
+                  value={promptRoll}
+                  onChange={(e) => setPromptRoll(e.target.value)}
+                  placeholder="যেমন: 12"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  বিদ্যালয়ের নাম (ঐচ্ছিক)
+                </label>
+                <input
+                  type="text"
+                  value={promptSchool}
+                  onChange={(e) => setPromptSchool(e.target.value)}
+                  placeholder="যেমন: বর্ধমান হাই স্কুল"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={exitMockTest}
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                বাতিল করুন
+              </button>
+              <button
+                type="submit"
+                disabled={!promptName.trim()}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer"
+              >
+                <span>পরীক্ষা আরম্ভ করুন</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentQ) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 my-8">
@@ -269,8 +433,23 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
             </div>
           </div>
 
-          {/* Right: Timer & Actions */}
-          <div className="flex items-center gap-3">
+          {/* Right: Candidate Name & Timer & Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Candidate Name Badge */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-xl border border-slate-200 dark:border-slate-600">
+              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
+                <User className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left leading-tight">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[120px]">
+                  {currentCandidate?.name || promptName || 'পরীক্ষার্থী'}
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {currentCandidate?.rollNo || promptRoll ? `রোল: ${currentCandidate?.rollNo || promptRoll}` : 'পরীক্ষার্থী'}
+                </div>
+              </div>
+            </div>
+
             {/* Countdown Badge */}
             <div
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono font-bold text-base sm:text-lg transition-colors ${
