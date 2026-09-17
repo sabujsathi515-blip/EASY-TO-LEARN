@@ -27,6 +27,7 @@ import { OfflineExamPaper } from './components/exam/OfflineExamPaper';
 import { TestResultModal } from './components/exam/TestResultModal';
 import { TestCertificateModal } from './components/exam/TestCertificateModal';
 import { StudentRegisterModal } from './components/auth/StudentRegisterModal';
+import { UniversalUploadModal } from './components/materials/UniversalUploadModal';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { MockTest } from './types';
 
@@ -104,6 +105,9 @@ const MainLayout: React.FC = () => {
 
       {/* Instant Search Across All Classes & Notes */}
       <SearchModal />
+
+      {/* Universal Upload Modal for PDFs, Images, Documents */}
+      <UniversalUploadModal />
 
       {/* Authentication Modal */}
       <LoginModal />

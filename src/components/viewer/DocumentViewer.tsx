@@ -435,6 +435,41 @@ export const DocumentViewer: React.FC = () => {
               </div>
             )}
 
+            {activeDocument.fileUrl &&
+              activeDocument.format !== 'pdf' &&
+              activeDocument.format !== 'image' &&
+              !activeDocument.fileUrl.startsWith('data:image/') && (
+                <div className="mb-6 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                        {activeDocument.fileName || activeDocument.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {activeDocument.fileSize ? `Size: ${activeDocument.fileSize} • ` : ''}
+                        {activeDocument.category.replace('_', ' ').toUpperCase()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {activeDocument.allowDownload && (
+                    <a
+                      href={activeDocument.fileUrl}
+                      download={activeDocument.fileName || `${activeDocument.title}.docx`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>{language === 'bn' ? 'ফাইল ডাউনলোড করুন' : 'Download File'}</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
             {currentPageData?.content ? (
               <div className="whitespace-pre-wrap font-sans">
                 {renderHighlightedText(currentPageData.content)}

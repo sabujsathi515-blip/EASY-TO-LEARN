@@ -25,7 +25,9 @@ export type MaterialCategory =
   | 'class_tests'
   | 'important_questions'
   | 'practice_sets'
-  | 'notices';
+  | 'documents'
+  | 'notices'
+  | 'other';
 
 export type ExamType =
   | 'class_test'
@@ -267,13 +269,14 @@ export interface StudyMaterial {
   titleBn?: string;
   type?: MaterialType;
   category: MaterialCategory;
-  format: 'pdf' | 'rich_notes' | 'worksheet' | 'notes' | 'image';
+  format: 'pdf' | 'rich_notes' | 'worksheet' | 'notes' | 'image' | 'document';
   description?: string;
   totalPages?: number;
   pages?: MaterialPage[];
-  fileUrl?: string; // base64, blob or direct url for PDF/Image
+  fileUrl?: string; // base64, blob or direct url for PDF/Image/Doc
   fileName?: string;
   fileSize?: string;
+  fileType?: string;
   storagePath?: string;
   coverImageUrl?: string;
   uploadDate: string;

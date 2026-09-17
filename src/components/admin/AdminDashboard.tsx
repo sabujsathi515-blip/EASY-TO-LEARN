@@ -726,6 +726,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <option value="chapter_notes">Chapter Notes</option>
                     <option value="pdf_notes">PDF Notes</option>
+                    <option value="documents">Documents (Word/Docx/Text)</option>
                     <option value="question_papers">Question Papers</option>
                     <option value="suggestions">Suggestions</option>
                     <option value="worksheets">Worksheets</option>
@@ -733,6 +734,7 @@ export const AdminDashboard: React.FC = () => {
                     <option value="class_tests">Class Tests</option>
                     <option value="important_questions">Important Questions</option>
                     <option value="practice_sets">Practice Sets</option>
+                    <option value="other">Other Resources</option>
                   </select>
                 </div>
               </div>
@@ -776,7 +778,8 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold"
                   >
                     <option value="pdf">PDF Document (Protected)</option>
-                    <option value="image">Image / Diagram / Photo (Protected)</option>
+                    <option value="image">Image / Diagram / Photo</option>
+                    <option value="document">Document (Word / Docx / Text)</option>
                     <option value="notes">Lecture Notes (Protected)</option>
                   </select>
                 </div>
@@ -825,15 +828,15 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <label className="cursor-pointer px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs flex items-center gap-2">
                     <Upload className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Choose PDF or Image File</span>
+                    <span>Choose File (PDF, Image, Document)</span>
                     <input
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept="application/pdf,image/*,.doc,.docx,.txt,.rtf,.odt,.ppt,.pptx,.xls,.xlsx,.csv"
                       onChange={(e) => handleFileSelect(e, false)}
                       className="hidden"
                     />
                   </label>
-                  <span className="text-[11px] text-slate-500">Supports .pdf, .png, .jpg, .jpeg</span>
+                  <span className="text-[11px] text-slate-500">Supports .pdf, .png, .jpg, .docx, .txt, .xlsx</span>
                 </div>
               </div>
 

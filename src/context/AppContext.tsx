@@ -92,6 +92,8 @@ interface AppContextType {
   setIsLoginOpen: (open: boolean) => void;
   isRegisterOpen: boolean;
   setIsRegisterOpen: (open: boolean) => void;
+  isUploadOpen: boolean;
+  setIsUploadOpen: (open: boolean) => void;
 
   // Auth
   currentUser: CurrentUser;
@@ -332,6 +334,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState<boolean>(false);
+  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
 
   // Auth
   const [currentUser, setCurrentUser] = useState<CurrentUser>(() => {
@@ -463,7 +466,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [chapters]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(studyMaterials));
+    try {
+      localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(studyMaterials));
+    } catch (err) {
+      console.warn('LocalStorage quota limit reached while saving study materials:', err);
+    }
   }, [studyMaterials]);
 
   useEffect(() => {
@@ -1117,6 +1124,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsLoginOpen,
         isRegisterOpen,
         setIsRegisterOpen,
+        isUploadOpen,
+        setIsUploadOpen,
         currentUser,
         loginAsAdmin,
         loginAsStudent,

@@ -13,12 +13,15 @@ import {
   Filter,
   GraduationCap,
   HelpCircle,
+  Image as ImageIcon,
   Layers,
   Lock,
   Plus,
   Search,
   Sparkles,
+  Trash2,
   Trophy,
+  Upload,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MaterialCategory, StudyMaterial } from '../../types';
@@ -37,13 +40,18 @@ export const StudyMaterialsSection: React.FC = () => {
     selectedChapterId,
     setSelectedChapterId,
     openDocumentViewer,
+    deleteStudyMaterial,
+    isUploadOpen,
+    setIsUploadOpen,
     currentUser,
     setCurrentView,
+    showToast,
     language,
     t,
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState<MaterialCategory | 'all'>('all');
+  const [selectedFormat, setSelectedFormat] = useState<'all' | 'pdf' | 'image' | 'document' | 'notes'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Class subjects
@@ -79,9 +87,10 @@ export const StudyMaterialsSection: React.FC = () => {
 
   // Categories list with labels and icons
   const categoriesList: { id: MaterialCategory | 'all'; label: string; icon: any }[] = [
-    { id: 'all', label: 'All Resources', icon: Layers },
-    { id: 'chapter_notes', label: t.chapter_notes, icon: BookOpen },
+    { id: 'all', label: language === 'bn' ? 'সকল রিসোর্স' : 'All Resources', icon: Layers },
     { id: 'pdf_notes', label: t.pdf_notes, icon: FileText },
+    { id: 'documents', label: language === 'bn' ? 'ডকুমেন্টস (Word/Doc)' : 'Documents (Word/Doc)', icon: FileText },
+    { id: 'chapter_notes', label: t.chapter_notes, icon: BookOpen },
     { id: 'question_papers', label: t.question_papers, icon: FileQuestion },
     { id: 'suggestions', label: t.suggestions, icon: Trophy },
     { id: 'worksheets', label: t.worksheets, icon: FileSpreadsheet },
@@ -106,7 +115,26 @@ export const StudyMaterialsSection: React.FC = () => {
       // Category filter
       if (activeCategory !== 'all' && mat.category !== activeCategory) return false;
 
-      // Search query filter (Search by Title, Chapter, Topic)
+      // Format filter
+      if (selectedFormat !== 'all') {
+        if (selectedFormat === 'pdf' && mat.format !== 'pdf') return false;
+        if (
+          selectedFormat === 'image' &&
+          mat.format !== 'image' &&
+          !mat.fileUrl?.startsWith('data:image/')
+        )
+          return false;
+        if (
+          selectedFormat === 'document' &&
+          mat.format !== 'document' &&
+          !mat.fileName?.match(/\.(doc|docx|txt|rtf|odt|xls|xlsx|ppt|pptx)$/i)
+        )
+          return false;
+        if (selectedFormat === 'notes' && mat.format !== 'notes' && mat.format !== 'rich_notes')
+          return false;
+      }
+
+      // Search query filter (Search by Title, Chapter, Topic, File type)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle =
@@ -115,7 +143,16 @@ export const StudyMaterialsSection: React.FC = () => {
         const matchesTopic = (mat.topic || '').toLowerCase().includes(q);
         const matchesChapter = (mat.chapter || '').toLowerCase().includes(q);
         const matchesCategory = (mat.category || '').toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc && !matchesTopic && !matchesChapter && !matchesCategory) return false;
+        const matchesFile = (mat.fileName || '').toLowerCase().includes(q);
+        if (
+          !matchesTitle &&
+          !matchesDesc &&
+          !matchesTopic &&
+          !matchesChapter &&
+          !matchesCategory &&
+          !matchesFile
+        )
+          return false;
       }
 
       return true;
@@ -126,6 +163,7 @@ export const StudyMaterialsSection: React.FC = () => {
     activeSubject,
     activeChapter,
     activeCategory,
+    selectedFormat,
     searchQuery,
   ]);
 
@@ -136,14 +174,24 @@ export const StudyMaterialsSection: React.FC = () => {
       {/* Navigation Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <BackButton showHomeShortcut />
-        <button
-          type="button"
-          onClick={() => setCurrentView('classes')}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition"
-        >
-          <GraduationCap className="w-4 h-4 text-indigo-600" />
-          <span>{language === 'bn' ? 'শ্রেণি তালিকায় ফিরুন' : 'Back to Classes'}</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsUploadOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md transition active:scale-95 cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            <span>{language === 'bn' ? 'ফাইল আপলোড করুন' : 'Upload File'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentView('classes')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+            <span>{language === 'bn' ? 'শ্রেণি তালিকায় ফিরুন' : 'Back to Classes'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Top Header: Class Switcher & Info */}
@@ -334,6 +382,42 @@ export const StudyMaterialsSection: React.FC = () => {
             })}
           </div>
 
+          {/* Format Filter & Upload Quick Trigger */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5">
+              <span className="text-[11px] font-bold uppercase text-slate-400 mr-1">
+                {language === 'bn' ? 'ফরম্যাট:' : 'Format:'}
+              </span>
+              {[
+                { id: 'all', label: language === 'bn' ? 'সকল' : 'All' },
+                { id: 'pdf', label: 'PDF' },
+                { id: 'image', label: language === 'bn' ? 'ছবি / ফটো' : 'Images' },
+                { id: 'document', label: language === 'bn' ? 'ডকুমেন্ট (Word)' : 'Docs' },
+                { id: 'notes', label: language === 'bn' ? 'নোটস' : 'Notes' },
+              ].map((fmt) => (
+                <button
+                  key={fmt.id}
+                  onClick={() => setSelectedFormat(fmt.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                    selectedFormat === fmt.id
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {fmt.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? '+ নতুন ফাইল আপলোড করুন' : '+ Upload Material'}</span>
+            </button>
+          </div>
+
           {/* Search bar inside view */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -341,7 +425,11 @@ export const StudyMaterialsSection: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by topic, keyword or title..."
+              placeholder={
+                language === 'bn'
+                  ? 'বিষয়, অধ্যায় বা মেটেরিয়ালের নাম দিয়ে খুঁজুন...'
+                  : 'Search by topic, keyword or title...'
+              }
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
             {searchQuery && (
@@ -356,20 +444,37 @@ export const StudyMaterialsSection: React.FC = () => {
 
           {/* Study Material Cards */}
           {displayedMaterials.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800 space-y-3">
-              <FileText className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600" />
-              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
-                No Materials Found
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                No items match your selected subject or category. Try choosing "All Resources" or
-                switch chapters.
-              </p>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 sm:p-12 text-center border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center text-indigo-600 mx-auto">
+                <FileText className="w-8 h-8 opacity-70" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
+                  {language === 'bn' ? 'কোনো মেটেরিয়াল বা ফাইল পাওয়া যায়নি' : 'No Materials Found'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  {language === 'bn'
+                    ? 'এই বিষয় বা ক্যাটাগরিতে কোনো ফাইল নেই। আপনি সরাসরি নতুন PDF, ছবি বা ডকুমেন্ট আপলোড করতে পারেন।'
+                    : 'No items match your selected filters. Upload your own PDF, image or document now!'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md transition cursor-pointer"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{language === 'bn' ? 'এখানে প্রথম ফাইল আপলোড করুন' : 'Upload First File Here'}</span>
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
               {displayedMaterials.map((mat) => {
                 const chapter = chapters.find((c) => c.id === mat.chapterId);
+                const isImage =
+                  mat.format === 'image' || mat.fileUrl?.startsWith('data:image/');
+                const isDoc =
+                  mat.format === 'document' ||
+                  mat.fileName?.match(/\.(doc|docx|txt|rtf|odt|xls|xlsx|ppt|pptx)$/i);
 
                 return (
                   <div
@@ -377,13 +482,41 @@ export const StudyMaterialsSection: React.FC = () => {
                     className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
                   >
                     <div className="flex items-start gap-3.5 min-w-0">
-                      <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-105 transition-transform">
-                        {mat.format === 'pdf' ? (
-                          <FileText className="w-6 h-6" />
-                        ) : (
-                          <BookOpen className="w-6 h-6" />
-                        )}
-                      </div>
+                      {/* Icon or Thumbnail Preview */}
+                      {isImage && mat.fileUrl ? (
+                        <div
+                          onClick={() => openDocumentViewer(mat)}
+                          className="w-12 h-12 rounded-xl overflow-hidden border border-purple-200 dark:border-purple-800 bg-purple-50 shrink-0 cursor-pointer shadow-xs"
+                        >
+                          <img
+                            src={mat.fileUrl}
+                            alt={mat.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+                            mat.format === 'pdf'
+                              ? 'bg-red-50 dark:bg-red-950/60 border border-red-100 dark:border-red-900 text-red-600'
+                              : isImage
+                              ? 'bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900 text-purple-600'
+                              : isDoc
+                              ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 text-blue-600'
+                              : 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 text-indigo-600'
+                          }`}
+                        >
+                          {mat.format === 'pdf' ? (
+                            <FileText className="w-6 h-6" />
+                          ) : isImage ? (
+                            <ImageIcon className="w-6 h-6" />
+                          ) : isDoc ? (
+                            <FileText className="w-6 h-6" />
+                          ) : (
+                            <BookOpen className="w-6 h-6" />
+                          )}
+                        </div>
+                      )}
 
                       <div className="min-w-0 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -392,7 +525,22 @@ export const StudyMaterialsSection: React.FC = () => {
                           </span>
                           {mat.format === 'pdf' && (
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">
-                              PDF DOCUMENT
+                              PDF
+                            </span>
+                          )}
+                          {isImage && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                              IMAGE
+                            </span>
+                          )}
+                          {isDoc && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                              DOC / FILE
+                            </span>
+                          )}
+                          {mat.fileSize && (
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {mat.fileSize}
                             </span>
                           )}
                           {mat.isSampleContent && (
@@ -402,7 +550,10 @@ export const StudyMaterialsSection: React.FC = () => {
                           )}
                         </div>
 
-                        <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                        <h3
+                          onClick={() => openDocumentViewer(mat)}
+                          className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition cursor-pointer"
+                        >
                           {language === 'bn' && mat.titleBn ? mat.titleBn : mat.title}
                         </h3>
 
@@ -421,6 +572,11 @@ export const StudyMaterialsSection: React.FC = () => {
                                 : chapter.title}
                             </span>
                           )}
+                          {mat.fileName && (
+                            <span className="text-slate-500 truncate max-w-[150px]">
+                              {mat.fileName}
+                            </span>
+                          )}
                           <span>•</span>
                           <span>{mat.totalPages || 1} Pages</span>
                           <span>•</span>
@@ -432,29 +588,70 @@ export const StudyMaterialsSection: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Action Buttons: READ NOW & DOWNLOAD */}
+                    {/* Action Buttons: READ NOW & DOWNLOAD & DELETE */}
                     <div className="shrink-0 flex flex-wrap items-center gap-2 sm:self-center">
                       <button
                         onClick={() => openDocumentViewer(mat)}
                         className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                         title={mat.isReadOnly ? 'Read Only Study Material' : 'Read Now'}
                       >
-                        <BookOpen className="w-3.5 h-3.5" />
-                        <span>{language === 'bn' ? 'পড়ুন' : 'Read Now'}</span>
+                        {isImage ? (
+                          <>
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? 'ছবি দেখুন' : 'View Image'}</span>
+                          </>
+                        ) : isDoc ? (
+                          <>
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? 'ডকুমেন্ট খুলুন' : 'Open Doc'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? 'পড়ুন' : 'Read Now'}</span>
+                          </>
+                        )}
                       </button>
 
                       {mat.allowDownload && mat.fileUrl && (
                         <a
                           href={mat.fileUrl}
-                          download={mat.fileName || `${mat.title}.pdf`}
+                          download={mat.fileName || `${mat.title}.${isImage ? 'png' : 'pdf'}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                          title="Download authorized PDF"
+                          title="Download file"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>{language === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
                         </a>
+                      )}
+
+                      {/* Delete Option if Admin or custom uploaded */}
+                      {(currentUser.role === 'admin' || !mat.isSampleContent) && (
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                language === 'bn'
+                                  ? `আপনি কি "${mat.title}" মুছে ফেলতে চান?`
+                                  : `Delete "${mat.title}"?`
+                              )
+                            ) {
+                              deleteStudyMaterial(mat.id);
+                              showToast(
+                                language === 'bn'
+                                  ? `"${mat.title}" মুছে ফেলা হয়েছে।`
+                                  : `"${mat.title}" deleted.`,
+                                'info'
+                              );
+                            }
+                          }}
+                          className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
+                          title="Delete material"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
