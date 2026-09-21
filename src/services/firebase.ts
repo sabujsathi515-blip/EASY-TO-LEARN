@@ -11,12 +11,16 @@ import {
   query,
   where,
   orderBy,
+  onSnapshot,
+  serverTimestamp,
   Firestore,
 } from 'firebase/firestore';
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
   updateProfile,
   Auth,
 } from 'firebase/auth';
@@ -28,25 +32,14 @@ import {
   deleteObject,
   FirebaseStorage,
 } from 'firebase/storage';
-import { MockTest, Question, TestResult, StudentProfile, StudyMaterial, Notice } from '../types';
+import { MockTest, Question, TestResult, MockTestSubmission, StudentProfile, StudyMaterial, Notice } from '../types';
+import { FIREBASE_CONFIG, checkIsFirebaseConfigured } from '../config/firebaseConfig';
 
-// Read Firebase configuration from environment variables if provided
-const env = (import.meta as unknown as { env?: Record<string, string> }).env || {};
-const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: env.VITE_FIREBASE_APP_ID,
-};
+// Read Firebase configuration from config/env
+export const firebaseConfig = FIREBASE_CONFIG;
 
 // Check if valid Firebase configuration is present
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey &&
-  firebaseConfig.projectId &&
-  firebaseConfig.apiKey !== 'YOUR_FIREBASE_API_KEY'
-);
+export const isFirebaseConfigured = checkIsFirebaseConfigured();
 
 let app: any = null;
 let db: Firestore | null = null;
@@ -67,6 +60,14 @@ if (isFirebaseConfigured) {
 
 export { db, auth, storage };
 
+export function getFirebaseStatus() {
+  return {
+    isAvailable: !!db,
+    projectId: firebaseConfig.projectId || 'easylearn-live-edu',
+    appName: app ? app.name : 'offline',
+  };
+}
+
 // Firestore collection names adhering to the specification
 export const COLLECTIONS = {
   USERS: 'users',
@@ -81,6 +82,7 @@ export const COLLECTIONS = {
   TESTS: 'tests',
   TEST_ATTEMPTS: 'testAttempts',
   RESULTS: 'results',
+  MOCK_TEST_SUBMISSIONS: 'mockTestSubmissions',
   OFFLINE_RESULTS: 'offlineResults',
   MATERIALS: 'materials',
   NOTICES: 'notices',
@@ -351,6 +353,13 @@ export async function flushOfflineSyncQueue(): Promise<{ totalSynced: number }> 
         const docRef = doc(db, COLLECTIONS.RESULTS, item.data.id);
         await setDoc(docRef, item.data);
         synced++;
+      } else if (item.type === 'mock_test_submission') {
+        const docRef = doc(db, COLLECTIONS.MOCK_TEST_SUBMISSIONS, item.data.id);
+        await setDoc(docRef, {
+          ...item.data,
+          submittedAt: serverTimestamp(),
+        });
+        synced++;
       } else if (item.type === 'student') {
         const docRef = doc(db, COLLECTIONS.STUDENTS, item.data.id);
         await setDoc(docRef, item.data);
@@ -376,4 +385,348 @@ export async function flushOfflineSyncQueue(): Promise<{ totalSynced: number }> 
   localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
   return { totalSynced: synced };
 }
+
+// ============================================================================
+// MOCK TEST SUBMISSIONS SYSTEM (Firebase Firestore Collection: mockTestSubmissions)
+// ============================================================================
+
+export const MOCK_SUBMISSIONS_STORAGE_KEY = 'e2l_mock_test_submissions_v1';
+
+export function getLocalMockSubmissions(): MockTestSubmission[] {
+  try {
+    const raw = localStorage.getItem(MOCK_SUBMISSIONS_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to parse local mock submissions:', e);
+    return [];
+  }
+}
+
+export function saveLocalMockSubmissions(submissions: MockTestSubmission[]) {
+  try {
+    localStorage.setItem(MOCK_SUBMISSIONS_STORAGE_KEY, JSON.stringify(submissions));
+  } catch (e) {
+    console.warn('Failed to cache mock submissions to localStorage:', e);
+  }
+}
+
+/**
+ * Saves a student's mock test submission into Firebase Firestore (mockTestSubmissions)
+ * Guarantees zero data loss: records in local storage instantly, syncs to cloud if online.
+ */
+export async function saveMockTestSubmission(
+  submissionData: Omit<MockTestSubmission, 'id'> & { id?: string }
+): Promise<{ success: boolean; id: string; syncedToCloud: boolean; error?: string }> {
+  const docId = submissionData.id || `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date();
+  
+  const formattedDate = submissionData.submissionDate || now.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  const formattedTime = submissionData.submissionTime || now.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const timeSec = submissionData.timeTaken || 0;
+  const timeTakenFormatted = submissionData.timeTakenFormatted || (
+    timeSec >= 60
+      ? `${Math.floor(timeSec / 60)} মি: ${timeSec % 60} সে:`
+      : `${timeSec} সেকেন্ড`
+  );
+
+  const localSubmission: MockTestSubmission = {
+    ...submissionData,
+    id: docId,
+    submissionDate: formattedDate,
+    submissionTime: formattedTime,
+    timeTakenFormatted,
+    submittedAt: now.toISOString(),
+    syncedToCloud: false,
+  };
+
+  // 1. Always save to local storage immediately
+  const existingLocal = getLocalMockSubmissions();
+  const updatedLocal = [localSubmission, ...existingLocal.filter((s) => s.id !== docId)];
+  saveLocalMockSubmissions(updatedLocal);
+
+  // 2. If Firebase is active and user is online, attempt cloud write
+  if (isFirebaseConfigured && db && navigator.onLine) {
+    try {
+      const docRef = doc(db, COLLECTIONS.MOCK_TEST_SUBMISSIONS, docId);
+      
+      const firestorePayload = {
+        id: docId,
+        studentName: submissionData.studentName || 'Unknown Student',
+        studentId: submissionData.studentId || 'N/A',
+        className: submissionData.className || 'General',
+        subject: submissionData.subject || 'General',
+        testName: submissionData.testName || 'Mock Test',
+        testId: submissionData.testId || '',
+        classId: submissionData.classId || 0,
+        subjectId: submissionData.subjectId || '',
+        totalQuestions: submissionData.totalQuestions || 0,
+        attemptedQuestions: submissionData.attemptedQuestions || 0,
+        correctAnswers: submissionData.correctAnswers || 0,
+        wrongAnswers: submissionData.wrongAnswers || 0,
+        unansweredQuestions: submissionData.unansweredQuestions || 0,
+        totalMarks: submissionData.totalMarks || 0,
+        obtainedMarks: submissionData.obtainedMarks || 0,
+        percentage: submissionData.percentage || 0,
+        timeTaken: submissionData.timeTaken || 0,
+        timeTakenFormatted,
+        submissionDate: formattedDate,
+        submissionTime: formattedTime,
+        submittedAt: serverTimestamp(),
+        studentAnswers: submissionData.studentAnswers || {},
+        questionReviews: submissionData.questionReviews || [],
+        isPassed: Boolean(submissionData.isPassed),
+      };
+
+      await setDoc(docRef, firestorePayload);
+
+      // Update cloud sync state locally
+      localSubmission.syncedToCloud = true;
+      const syncedList = [localSubmission, ...existingLocal.filter((s) => s.id !== docId)];
+      saveLocalMockSubmissions(syncedList);
+
+      console.log(`✅ Saved submission ${docId} directly to Firestore mockTestSubmissions`);
+      return { success: true, id: docId, syncedToCloud: true };
+    } catch (err: any) {
+      console.warn('⚠️ Cloud Firestore write error, kept in local storage:', err);
+      addToOfflineSyncQueue({
+        type: 'mock_test_submission' as any,
+        data: localSubmission,
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        success: true,
+        id: docId,
+        syncedToCloud: false,
+        error: err?.message || 'Network error saving to cloud. Saved locally.',
+      };
+    }
+  }
+
+  // If offline or unconfigured, queue locally
+  addToOfflineSyncQueue({
+    type: 'mock_test_submission' as any,
+    data: localSubmission,
+    timestamp: new Date().toISOString(),
+  });
+
+  return {
+    success: true,
+    id: docId,
+    syncedToCloud: false,
+    error: isFirebaseConfigured ? 'Offline: Saved locally, will sync when online' : 'Firebase not configured: Saved to local storage',
+  };
+}
+
+/**
+ * Fetches all student submissions from Firestore (mockTestSubmissions)
+ * Falls back to local storage seamlessly if offline or during setup.
+ */
+export async function fetchMockTestSubmissions(): Promise<MockTestSubmission[]> {
+  const localList = getLocalMockSubmissions();
+
+  if (isFirebaseConfigured && db && navigator.onLine) {
+    try {
+      const colRef = collection(db, COLLECTIONS.MOCK_TEST_SUBMISSIONS);
+      const q = query(colRef, orderBy('submittedAt', 'desc'));
+      const snapshot = await getDocs(q);
+
+      const cloudList: MockTestSubmission[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data() as any;
+        let submittedAtStr = new Date().toISOString();
+        if (data.submittedAt?.toDate) {
+          submittedAtStr = data.submittedAt.toDate().toISOString();
+        } else if (typeof data.submittedAt === 'string') {
+          submittedAtStr = data.submittedAt;
+        }
+
+        cloudList.push({
+          ...data,
+          id: d.id,
+          submittedAt: submittedAtStr,
+          syncedToCloud: true,
+        });
+      });
+
+      // Merge local un-synced items with cloud items
+      const mergedMap = new Map<string, MockTestSubmission>();
+      cloudList.forEach((item) => mergedMap.set(item.id, item));
+      localList.forEach((item) => {
+        if (!mergedMap.has(item.id)) {
+          mergedMap.set(item.id, item);
+        }
+      });
+
+      const finalList = Array.from(mergedMap.values());
+      saveLocalMockSubmissions(finalList);
+      return finalList;
+    } catch (err) {
+      console.warn('Error fetching submissions from cloud, using local:', err);
+      return localList;
+    }
+  }
+
+  return localList;
+}
+
+/**
+ * Subscribes to real-time updates of student submissions for Admin Dashboard
+ */
+export function subscribeToMockTestSubmissions(
+  callback: (submissions: MockTestSubmission[]) => void
+): () => void {
+  // Always trigger immediately with current local data
+  callback(getLocalMockSubmissions());
+
+  if (!isFirebaseConfigured || !db) {
+    return () => {};
+  }
+
+  try {
+    const colRef = collection(db, COLLECTIONS.MOCK_TEST_SUBMISSIONS);
+    const q = query(colRef, orderBy('submittedAt', 'desc'));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const cloudList: MockTestSubmission[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as any;
+          let submittedAtStr = new Date().toISOString();
+          if (data.submittedAt?.toDate) {
+            submittedAtStr = data.submittedAt.toDate().toISOString();
+          } else if (typeof data.submittedAt === 'string') {
+            submittedAtStr = data.submittedAt;
+          }
+
+          cloudList.push({
+            ...data,
+            id: d.id,
+            submittedAt: submittedAtStr,
+            syncedToCloud: true,
+          });
+        });
+
+        // Merge with local un-synced items
+        const localList = getLocalMockSubmissions();
+        const mergedMap = new Map<string, MockTestSubmission>();
+        cloudList.forEach((item) => mergedMap.set(item.id, item));
+        localList.forEach((item) => {
+          if (!mergedMap.has(item.id)) {
+            mergedMap.set(item.id, item);
+          }
+        });
+
+        const finalList = Array.from(mergedMap.values());
+        saveLocalMockSubmissions(finalList);
+        callback(finalList);
+      },
+      (error) => {
+        console.warn('Real-time mockTestSubmissions listener error:', error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Could not establish real-time listener:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Delete a student submission from database and local storage
+ */
+export async function deleteMockTestSubmission(submissionId: string): Promise<boolean> {
+  // Remove from local cache
+  const localList = getLocalMockSubmissions();
+  const updated = localList.filter((s) => s.id !== submissionId);
+  saveLocalMockSubmissions(updated);
+
+  if (isFirebaseConfigured && db && navigator.onLine) {
+    try {
+      const docRef = doc(db, COLLECTIONS.MOCK_TEST_SUBMISSIONS, submissionId);
+      await deleteDoc(docRef);
+      return true;
+    } catch (err) {
+      console.warn('Error deleting submission from Firestore:', err);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// ============================================================================
+// FIREBASE AUTHENTICATION HELPERS FOR ADMIN LOGIN
+// ============================================================================
+
+export async function signInAdminWithFirebase(
+  email: string,
+  pass: string
+): Promise<{ success: boolean; user?: any; error?: string }> {
+  if (!isFirebaseConfigured || !auth) {
+    // Return friendly status indicating offline/fallback mode is available
+    return {
+      success: false,
+      error: 'Firebase Auth is not configured. Please use Master PIN to access.',
+    };
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    return { success: true, user: userCredential.user };
+  } catch (err: any) {
+    let message = 'Firebase login failed';
+    if (err.code === 'auth/user-not-found') message = 'No admin account found with this email';
+    else if (err.code === 'auth/wrong-password') message = 'Incorrect password';
+    else if (err.code === 'auth/invalid-email') message = 'Invalid email address format';
+    else if (err.message) message = err.message;
+
+    return { success: false, error: message };
+  }
+}
+
+export async function registerAdminWithFirebase(
+  email: string,
+  pass: string
+): Promise<{ success: boolean; user?: any; error?: string }> {
+  if (!isFirebaseConfigured || !auth) {
+    return { success: false, error: 'Firebase Auth is not configured' };
+  }
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    return { success: true, user: userCredential.user };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Could not register admin account' };
+  }
+}
+
+export async function signOutAdmin(): Promise<void> {
+  if (isFirebaseConfigured && auth) {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn('Sign out error:', e);
+    }
+  }
+}
+
+export function onAdminAuthStateChanged(callback: (user: any) => void): () => void {
+  if (!isFirebaseConfigured || !auth) {
+    return () => {};
+  }
+  return onAuthStateChanged(auth, callback);
+}
+
 

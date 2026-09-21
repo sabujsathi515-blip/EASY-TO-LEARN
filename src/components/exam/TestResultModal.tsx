@@ -212,21 +212,23 @@ export const TestResultModal: React.FC<Props> = ({ result, onClose }) => {
                   )}
 
                   {/* Answers recap */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                    <div>
-                      <span className="text-slate-500">আপনার দেওয়া উত্তর: </span>
+                  <div className="text-xs mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                      <span className="text-slate-500 shrink-0">আপনার দেওয়া উত্তর: </span>
                       <span
-                        className={`font-bold ${
-                          rev.isCorrect ? 'text-emerald-600' : 'text-rose-600'
+                        className={`font-medium break-words ${
+                          rev.isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
                         }`}
                       >
                         {rev.studentAnswer || 'দেওয়া হয়নি'}
                       </span>
                     </div>
 
-                    <div>
-                      <span className="text-slate-500">সঠিক উত্তর: </span>
-                      <span className="font-bold text-emerald-600">{rev.correctAnswer}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                      <span className="text-slate-500 shrink-0">আদর্শ/সঠিক উত্তর: </span>
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-300 break-words">
+                        {rev.correctAnswer}
+                      </span>
                     </div>
                   </div>
 

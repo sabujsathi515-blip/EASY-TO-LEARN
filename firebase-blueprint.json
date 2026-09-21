@@ -1,0 +1,178 @@
+{
+  "entities": {
+    "MockTestSubmission": {
+      "title": "Mock Test Submission",
+      "description": "Comprehensive student submission record for mock exams",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentName": { "type": "string", "maxLength": 200 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentEmail": { "type": "string", "format": "email" },
+        "studentMobile": { "type": "string", "maxLength": 20 },
+        "className": { "type": "string", "maxLength": 50 },
+        "classId": { "type": "number" },
+        "subject": { "type": "string", "maxLength": 100 },
+        "subjectId": { "type": "string", "maxLength": 100 },
+        "testName": { "type": "string", "maxLength": 200 },
+        "testId": { "type": "string", "maxLength": 128 },
+        "totalQuestions": { "type": "number" },
+        "attemptedQuestions": { "type": "number" },
+        "correctAnswers": { "type": "number" },
+        "wrongAnswers": { "type": "number" },
+        "unansweredQuestions": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "obtainedMarks": { "type": "number" },
+        "percentage": { "type": "number" },
+        "timeTaken": { "type": "number" },
+        "timeTakenFormatted": { "type": "string", "maxLength": 50 },
+        "submissionDate": { "type": "string", "maxLength": 50 },
+        "submissionTime": { "type": "string", "maxLength": 50 },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "isPassed": { "type": "boolean" },
+        "studentAnswers": { "type": "object" },
+        "questionReviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionId": { "type": "string" },
+              "questionText": { "type": "string" },
+              "studentAnswer": { "type": "string" },
+              "correctAnswer": { "type": "string" },
+              "isCorrect": { "type": "boolean" },
+              "marksAwarded": { "type": "number" },
+              "maxMarks": { "type": "number" },
+              "explanation": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": [
+        "studentName",
+        "studentId",
+        "className",
+        "subject",
+        "testName",
+        "totalQuestions",
+        "attemptedQuestions",
+        "correctAnswers",
+        "wrongAnswers",
+        "unansweredQuestions",
+        "totalMarks",
+        "obtainedMarks",
+        "percentage",
+        "timeTaken"
+      ]
+    },
+    "Test": {
+      "title": "Mock Test",
+      "description": "Examination mock test definition and paper details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "titleBn": { "type": "string", "maxLength": 200 },
+        "classId": { "type": "number" },
+        "subjectId": { "type": "string" },
+        "chapter": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "passMarks": { "type": "number" },
+        "testType": { "type": "string", "enum": ["online", "offline", "both"] },
+        "allowTabSwitch": { "type": "boolean" },
+        "randomizeQuestions": { "type": "boolean" },
+        "questionIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "classId", "subjectId", "durationMinutes", "totalMarks"]
+    },
+    "Question": {
+      "title": "Question Bank Item",
+      "description": "Single question in the question bank",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "number" },
+        "subjectId": { "type": "string" },
+        "chapter": { "type": "string" },
+        "questionType": { "type": "string", "enum": ["mcq", "true_false", "fill_blank"] },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "questionBn": { "type": "string" },
+        "questionEn": { "type": "string" },
+        "marks": { "type": "number" },
+        "correctAnswer": { "type": "string" },
+        "explanationBn": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "textBn": { "type": "string" },
+              "textEn": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["classId", "subjectId", "questionBn", "correctAnswer", "marks"]
+    },
+    "StudyMaterial": {
+      "title": "Study Material / Notes / PDF",
+      "description": "Educational resource, chapter notes, WB board textbook or PDF document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "number" },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "title": { "type": "string" },
+        "titleBn": { "type": "string" },
+        "category": { "type": "string" },
+        "format": { "type": "string", "enum": ["pdf", "notes", "image"] },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "allowDownload": { "type": "boolean" },
+        "materialType": { "type": "string" }
+      },
+      "required": ["classId", "subjectId", "title", "category", "format"]
+    },
+    "Student": {
+      "title": "Student Profile",
+      "description": "Registered student account and enrollment information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "name": { "type": "string" },
+        "classId": { "type": "number" },
+        "rollNumber": { "type": "string" },
+        "mobileNumber": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "schoolName": { "type": "string" }
+      },
+      "required": ["studentId", "name", "classId"]
+    }
+  },
+  "firestore": {
+    "/mockTestSubmissions/{submissionId}": {
+      "schema": "MockTestSubmission",
+      "description": "Student mock test evaluation submissions"
+    },
+    "/tests/{testId}": {
+      "schema": "Test",
+      "description": "Mock tests and exams collection"
+    },
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Question bank repository"
+    },
+    "/materials/{materialId}": {
+      "schema": "StudyMaterial",
+      "description": "Study materials, chapter notes, and textbook documents"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Enrolled student profiles"
+    }
+  }
+}

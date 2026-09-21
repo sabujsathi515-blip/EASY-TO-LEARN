@@ -1,61 +1,62 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // ========================================================================
+    // Authentication & Role-Based Access Control (RBAC) Helpers
+    // ========================================================================
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
+    // Admin role check: checks authenticated administrator email or admins collection document
     function isAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.role == 'admin' || request.auth.token.email == 'admin@easylearn.wb');
+      return isAuthenticated() && (
+        request.auth.token.email == 'sabujsathi515@gmail.com' ||
+        request.auth.token.email in ['admin@easylearn.com', 'easytolearn@admin.com'] ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
-    function isTeacher() {
-      return isAuthenticated() && 
-        (request.auth.token.role == 'teacher' || isAdmin());
+    // Validates document ID formatting to prevent ID injection attacks
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Public / Enrolled Students can read published materials
-    match /materials/{materialId} {
-      allow read: if true; // Students can read study materials & PDFs
-      allow create, update, delete: if isTeacher() || isAdmin();
+    // Checks if current authenticated user is the student owner of the resource
+    function isStudentOwner(data) {
+      return isAuthenticated() && (
+        data.studentId == request.auth.uid ||
+        (data.studentEmail != null && data.studentEmail == request.auth.token.email)
+      );
     }
 
-    // Question Bank
-    match /questions/{questionId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isTeacher() || isAdmin();
-    }
-
-    // Mock Tests
+    // ========================================================================
+    // 1. Tests & Mock Examinations Collection (Public Read, Admin Write)
+    // ========================================================================
     match /tests/{testId} {
-      allow read: if true; // Students can see available mock tests
-      allow create, update, delete: if isTeacher() || isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Test Results
-    match /results/{resultId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() || true; // Allow student submission
-      allow update, delete: if isTeacher() || isAdmin();
+    // ========================================================================
+    // 2. Question Bank & Items (Public Read, Admin Write)
+    // ========================================================================
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Students Directory
-    match /students/{studentId} {
-      allow read: if isAuthenticated();
-      allow create: if true; // Self-registration
-      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == studentId);
+    // ========================================================================
+    // 3. Study Materials, Textbooks & Educational Documents (Public Read, Admin Write)
+    // ========================================================================
+    match /materials/{materialId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Notices
-    match /notices/{noticeId} {
-      allow read: if true; // Publicly accessible to students
-      allow write: if isTeacher() || isAdmin();
-    }
-
-    // Classes and Subjects
+    // Curriculum hierarchy: Classes, Subjects, and Chapters (Public Read, Admin Write)
     match /classes/{classId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -66,10 +67,95 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Centre Settings
-    match /settings/{docId} {
+    match /chapters/{chapterId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Notices & Public Announcements (Public Read, Admin Write)
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // 4. Mock Test Submissions (Student Submit, Read Own, Admin Full Access)
+    // ========================================================================
+    match /mockTestSubmissions/{submissionId} {
+      // Creation: Students/candidates submit their completed mock test
+      allow create: if isValidId(submissionId) &&
+        request.resource.data.keys().hasAll([
+          'studentName',
+          'studentId',
+          'className',
+          'subject',
+          'testName',
+          'totalQuestions',
+          'attemptedQuestions',
+          'correctAnswers',
+          'wrongAnswers',
+          'unansweredQuestions',
+          'totalMarks',
+          'obtainedMarks',
+          'percentage',
+          'timeTaken'
+        ]) &&
+        request.resource.data.studentName is string &&
+        request.resource.data.studentName.size() > 0 &&
+        request.resource.data.studentName.size() <= 200 &&
+        request.resource.data.totalQuestions is number &&
+        request.resource.data.totalQuestions > 0 &&
+        request.resource.data.totalMarks is number &&
+        request.resource.data.obtainedMarks is number;
+
+      // Single Document Read (get):
+      // Admins have complete access; students can ONLY inspect their own submission
+      allow get: if isAdmin() || isStudentOwner(resource.data);
+
+      // Query/Collection Listing (list):
+      // Admins can browse all submissions; students are restricted to their own submissions
+      allow list: if isAdmin() || isStudentOwner(resource.data);
+
+      // Modification & Deletion:
+      // Strictly restricted to authorized Admin roles
+      allow update, delete: if isAdmin();
+    }
+
+    // Legacy / Parallel Test Attempts & Results Collection
+    match /testAttempts/{attemptId} {
+      allow create: if isAuthenticated() || isValidId(attemptId);
+      allow get, list: if isAdmin() || isStudentOwner(resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /results/{resultId} {
+      allow create: if isAuthenticated() || isValidId(resultId);
+      allow get, list: if isAdmin() || isStudentOwner(resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // 5. User Profiles, Students, & Administrative Records
+    // ========================================================================
+    match /students/{studentId} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == studentId);
+      allow write: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // 6. Global Catch-All Safety Net (Strict Default Deny / Admin Override)
+    // ========================================================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

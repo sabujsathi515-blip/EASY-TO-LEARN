@@ -59,7 +59,11 @@ export type QuestionType =
   | 'true_false'
   | 'fill_blank'
   | 'short_answer'
-  | 'match';
+  | 'match'
+  | 'descriptive'
+  | 'math'
+  | 'note'
+  | 'english';
 
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -172,6 +176,36 @@ export interface TestResult {
   questionReviews?: QuestionAttemptReview[];
   rank?: number;
   certificateId?: string;
+}
+
+export interface MockTestSubmission {
+  id: string;
+  studentName: string;
+  studentId: string;
+  studentMobile?: string;
+  className: string;
+  subject: string;
+  testName: string;
+  testId?: string;
+  classId?: number;
+  subjectId?: string;
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  unansweredQuestions: number;
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  timeTaken: number; // in seconds
+  timeTakenFormatted?: string;
+  submissionDate?: string;
+  submissionTime?: string;
+  submittedAt: any; // Firestore serverTimestamp or string
+  studentAnswers?: Record<string, string>;
+  questionReviews?: QuestionAttemptReview[];
+  isPassed?: boolean;
+  syncedToCloud?: boolean;
 }
 
 export interface CandidateInfo {

@@ -8,6 +8,7 @@ export const LoginModal: React.FC = () => {
     setIsLoginOpen,
     setIsRegisterOpen,
     loginAsAdmin,
+    loginAdminWithFirebase,
     loginAsStudent,
     loginQuickStudent,
     students,
@@ -15,6 +16,7 @@ export const LoginModal: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
 
   // Student credentials
   const [studentId, setStudentId] = useState('');
@@ -31,9 +33,17 @@ export const LoginModal: React.FC = () => {
     loginAsStudent(studentId, studentPass);
   };
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    loginAsAdmin(adminPass, adminUser);
+    // If entered email address, use Firebase Authentication directly
+    if (adminUser.includes('@')) {
+      setIsAdminLoading(true);
+      await loginAdminWithFirebase(adminUser.trim(), adminPass);
+      setIsAdminLoading(false);
+    } else {
+      // Use Local Admin PIN
+      loginAsAdmin(adminPass, adminUser);
+    }
   };
 
   return (
@@ -176,28 +186,28 @@ export const LoginModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span>Admin User ID</span>
-                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Auto-filled</span>
+                  <span>Admin User ID / Firebase Email</span>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Auto-filled / Email</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={adminUser}
                   onChange={(e) => setAdminUser(e.target.value)}
-                  placeholder="EASY TO LEARN"
+                  placeholder="EASY TO LEARN অথবা admin@email.com"
                   className="w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/30 text-slate-900 dark:text-white font-semibold text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Master Password
+                  Master PIN / Password
                 </label>
                 <div className="relative">
                   <input
                     type="password"
                     required
-                    placeholder="Enter 6-digit Password (PIN)"
+                    placeholder="Enter 6-digit PIN (909311) or Firebase Password"
                     value={adminPass}
                     onChange={(e) => setAdminPass(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -205,17 +215,18 @@ export const LoginModal: React.FC = () => {
                   <KeyRound className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
                 </div>
                 <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Teacher Security Key</span>
-                  <span className="text-slate-500 dark:text-slate-400 font-mono">PIN required</span>
+                  <span>PIN (ডিফল্ট: 909311) বা ফায়ারবেস পাসওয়ার্ড</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-mono">Teacher Admin</span>
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition flex items-center justify-center gap-2"
+                disabled={isAdminLoading}
+                className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <UserCheck className="w-4 h-4" />
-                Access Teacher Admin Dashboard
+                <span>{isAdminLoading ? 'যাচাই করা হচ্ছে...' : 'Teacher Admin ড্যাশবোর্ডে প্রবেশ করুন'}</span>
               </button>
             </form>
           )}

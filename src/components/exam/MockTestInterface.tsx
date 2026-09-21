@@ -500,6 +500,23 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
               </div>
 
               <div className="flex items-center gap-2">
+                <span className="text-xs px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold rounded-full border border-indigo-200 dark:border-indigo-800">
+                  {currentQ.questionType === 'mcq'
+                    ? 'MCQ (১ নম্বর)'
+                    : currentQ.questionType === 'short_answer'
+                    ? 'সংক্ষিপ্ত উত্তর (২ নম্বর)'
+                    : currentQ.questionType === 'descriptive'
+                    ? 'বর্ণনামূলক (৩ নম্বর)'
+                    : currentQ.questionType === 'math'
+                    ? 'গণিত সমস্যা'
+                    : currentQ.questionType === 'note'
+                    ? 'টিকা (৫ নম্বর)'
+                    : currentQ.questionType === 'english'
+                    ? 'English Writing (৫ নম্বর)'
+                    : currentQ.questionType === 'true_false'
+                    ? 'সত্য/মিথ্যা'
+                    : 'শূন্যস্থান পূরণ'}
+                </span>
                 <span className="text-xs px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium rounded-full border border-amber-200 dark:border-amber-800">
                   মান: {currentQ.marks || 1}
                 </span>
@@ -590,6 +607,49 @@ export const MockTestInterface: React.FC<Props> = ({ test }) => {
                   placeholder="শূন্যস্থানের সঠিক শব্দটি এখানে লিখুন..."
                   className="w-full px-4 py-3 text-base rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+            )}
+
+            {(currentQ.questionType === 'short_answer' ||
+              currentQ.questionType === 'descriptive' ||
+              currentQ.questionType === 'math' ||
+              currentQ.questionType === 'note' ||
+              currentQ.questionType === 'english') && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {currentQ.questionType === 'note'
+                      ? 'টিকা বা সংক্ষিপ্ত ব্যাখ্যা লিখুন (Write Note):'
+                      : currentQ.questionType === 'english'
+                      ? 'Write your paragraph in English:'
+                      : currentQ.questionType === 'math'
+                      ? 'সমাধান ও চূড়ান্ত উত্তর লিখুন (Show Steps & Answer):'
+                      : currentQ.questionType === 'descriptive'
+                      ? 'বিশদ বর্ণনামূলক উত্তর লিখুন (Descriptive Answer):'
+                      : 'আপনার সংক্ষিপ্ত উত্তর লিখুন (Short Answer):'}
+                  </label>
+                  <span className="text-xs text-slate-400">
+                    {(answers[currentQ.id] || '').length} অক্ষর
+                  </span>
+                </div>
+                <textarea
+                  rows={currentQ.marks >= 5 ? 6 : currentQ.marks >= 3 ? 4 : 3}
+                  value={answers[currentQ.id] || ''}
+                  onChange={(e) => handleSelectAnswer(currentQ.id, e.target.value)}
+                  placeholder={
+                    currentQ.questionType === 'english'
+                      ? 'Write your paragraph here in English (e.g. My school is a beautiful place...)...'
+                      : currentQ.questionType === 'math'
+                      ? 'গণিতের সমাধান ও উত্তর লিখুন (যেমন: ক্ষেত্রফল = ৯৬ বর্গ সেমি)...'
+                      : currentQ.questionType === 'note'
+                      ? 'সংক্ষিপ্ত টিকাটি এখানে গুছিয়ে লিখুন...'
+                      : 'আপনার উত্তর এখানে সংক্ষেপে লিখুন...'
+                  }
+                  className="w-full px-4 py-3 text-base rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  পরীক্ষা সাবমিট করার পর পূর্ণাঙ্গ সঠিক উত্তর ও বিস্তারিত ব্যাখ্যা দেখতে পাবেন।
+                </p>
               </div>
             )}
 

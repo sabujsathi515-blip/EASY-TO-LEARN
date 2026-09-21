@@ -37,6 +37,7 @@ import { useApp } from '../../context/AppContext';
 import { BackButton } from '../common/BackButton';
 import { AdminTextBooks } from './AdminTextBooks';
 import { MockTestAdmin } from '../exam/MockTestAdmin';
+import { MockTestSubmissionsManager } from './MockTestSubmissionsManager';
 import {
   AttendanceRecord,
   Chapter,
@@ -106,6 +107,7 @@ export const AdminDashboard: React.FC = () => {
     | 'materials'
     | 'books'
     | 'mock_tests'
+    | 'mock_results'
     | 'curriculum'
     | 'students'
     | 'attendance'
@@ -612,6 +614,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl text-xs font-bold">
         {[
           { id: 'mock_tests', label: 'মক টেস্ট ও প্রশ্নব্যাংক (Mock Tests & Question Bank)', icon: Award },
+          { id: 'mock_results', label: 'সকল রেজাল্ট ও সাবমিশন (Test Results & Firebase)', icon: CheckCircle2 },
           { id: 'materials', label: 'Study Materials & Upload', icon: BookOpen },
           { id: 'books', label: 'WB Board Books (সকল বই)', icon: Book },
           { id: 'curriculum', label: 'Subjects & Chapters', icon: Layers },
@@ -2145,6 +2148,11 @@ export const AdminDashboard: React.FC = () => {
       {/* 10. MOCK TESTS & QUESTION BANK MANAGEMENT TAB */}
       {/* ========================================================= */}
       {activeTab === 'mock_tests' && <MockTestAdmin />}
+
+      {/* ========================================================= */}
+      {/* 11. MOCK TEST SUBMISSIONS & FIREBASE PERSISTENCE TAB */}
+      {/* ========================================================= */}
+      {activeTab === 'mock_results' && <MockTestSubmissionsManager />}
 
       {/* ========================================================= */}
       {/* MODAL: EDIT STUDY MATERIAL */}

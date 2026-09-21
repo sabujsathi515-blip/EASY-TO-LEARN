@@ -9,6 +9,7 @@ import {
   HomeworkItem,
   Language,
   MockTest,
+  MockTestSubmission,
   Notice,
   OngoingTestAttempt,
   Question,
@@ -43,7 +44,15 @@ import {
   INITIAL_QUESTIONS,
   INITIAL_TEST_RESULTS,
 } from '../data/mockTestData';
-import { syncTestResult } from '../services/firebase';
+import {
+  syncTestResult,
+  saveMockTestSubmission,
+  fetchMockTestSubmissions,
+  subscribeToMockTestSubmissions,
+  deleteMockTestSubmission,
+  getLocalMockSubmissions,
+  signInAdminWithFirebase,
+} from '../services/firebase';
 import { translations } from '../utils/translations';
 
 export interface CurrentUser {
@@ -98,6 +107,7 @@ interface AppContextType {
   // Auth
   currentUser: CurrentUser;
   loginAsAdmin: (password: string, username?: string) => boolean;
+  loginAdminWithFirebase: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginAsStudent: (studentIdOrMobile: string, password: string) => boolean;
   loginQuickStudent: (student: StudentProfile) => void;
   logout: () => void;
@@ -193,6 +203,9 @@ interface AppContextType {
   updateMockTest: (id: string, test: Partial<MockTest>) => void;
   deleteMockTest: (id: string) => void;
   deleteTestResult: (id: string) => void;
+  mockSubmissions: MockTestSubmission[];
+  deleteMockSubmission: (id: string) => Promise<boolean>;
+  refreshMockSubmissions: () => Promise<void>;
   registerStudent: (data: {
     name: string;
     classId: number;
@@ -421,6 +434,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_TEST_RESULTS;
   });
 
+  const [mockSubmissions, setMockSubmissions] = useState<MockTestSubmission[]>(() => {
+    return getLocalMockSubmissions();
+  });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMockTestSubmissions((subs) => {
+      if (subs && subs.length > 0) {
+        setMockSubmissions(subs);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const [ongoingAttempt, setOngoingAttempt] = useState<OngoingTestAttempt | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ONGOING_ATTEMPT);
     return saved ? JSON.parse(saved) : null;
@@ -593,6 +621,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     showToast('Invalid credentials. Default User ID: EASY TO LEARN, Password: 6-digit PIN', 'error');
     return false;
+  };
+
+  const loginAdminWithFirebase = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const res = await signInAdminWithFirebase(email, pass);
+    if (res.success) {
+      const user: CurrentUser = {
+        role: 'admin',
+        adminName: res.user?.displayName || email.split('@')[0] || settings.teacherName,
+      };
+      setCurrentUser(user);
+      setIsLoginOpen(false);
+      setCurrentView('admin_dashboard');
+      showToast(`Firebase Admin Login Successful! Welcome ${user.adminName}`, 'success');
+      return { success: true };
+    }
+    showToast(res.error || 'Firebase Authentication failed', 'error');
+    return { success: false, error: res.error };
   };
 
   const loginAsStudent = (studentIdOrMobile: string, pass: string): boolean => {
@@ -890,15 +935,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const maxMarks = q.marks || 1;
       let isCorrect = false;
 
-      if (!studentAns) {
+      if (!studentAns || !studentAns.toString().trim()) {
         unansweredCount++;
       } else {
         const cleanStudent = studentAns.toString().trim().toLowerCase();
         const cleanCorrect = (q.correctAnswer || '').toString().trim().toLowerCase();
-        if (cleanStudent === cleanCorrect) {
+
+        const matchingStudentOption = q.options?.find(
+          (opt) => opt.id.toLowerCase() === cleanStudent
+        );
+        const studentOptionTextBn = matchingStudentOption?.textBn?.trim().toLowerCase();
+        const studentOptionTextEn = matchingStudentOption?.textEn?.trim().toLowerCase();
+
+        const correctOption = q.options?.find(
+          (opt) =>
+            opt.id.toLowerCase() === cleanCorrect ||
+            opt.textBn?.trim().toLowerCase() === cleanCorrect ||
+            opt.textEn?.trim().toLowerCase() === cleanCorrect
+        );
+
+        const isExactMatch = cleanStudent === cleanCorrect;
+        const isOptionTextMatch =
+          Boolean(studentOptionTextBn && studentOptionTextBn === cleanCorrect) ||
+          Boolean(studentOptionTextEn && studentOptionTextEn === cleanCorrect);
+        const isOptionIdMatch = Boolean(
+          correctOption &&
+            (cleanStudent === correctOption.id.toLowerCase() ||
+              studentAns.toString().trim().toUpperCase() === correctOption.id.toUpperCase())
+        );
+
+        const isSubjective = ['short_answer', 'descriptive', 'math', 'note', 'english'].includes(
+          q.questionType
+        );
+
+        if (isExactMatch || isOptionTextMatch || isOptionIdMatch) {
           isCorrect = true;
           correctCount++;
           obtainedMarks += maxMarks;
+        } else if (isSubjective && cleanStudent.length >= 2) {
+          const keywords = cleanCorrect.split(/[\s,।–\.\?]+/).filter((w) => w.length > 2);
+          const matchedKeywords = keywords.filter((kw) => cleanStudent.includes(kw));
+          const matchRatio = keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
+
+          if (matchRatio >= 0.25 || cleanStudent.length >= 15) {
+            isCorrect = true;
+            correctCount++;
+            obtainedMarks += maxMarks;
+          } else {
+            wrongCount++;
+          }
         } else {
           wrongCount++;
         }
@@ -968,6 +1053,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTestResults((prev) => [newResult, ...prev]);
     syncTestResult(newResult);
 
+    // Save full detailed submission to Firebase Firestore collection 'mockTestSubmissions'
+    const subjectObj = subjects.find((s) => s.id === test.subjectId);
+    const subjectName = subjectObj?.nameBn || subjectObj?.nameEn || test.subjectId || 'General';
+    const testName = test.titleBn || test.title;
+    const now = new Date();
+
+    const formattedDate = now.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const formattedTime = now.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const formattedTimeTaken = timeTakenSeconds >= 60
+      ? `${Math.floor(timeTakenSeconds / 60)} মি: ${timeTakenSeconds % 60} সে:`
+      : `${timeTakenSeconds} সেকেন্ড`;
+
+    const submissionPayload: MockTestSubmission = {
+      id: resultId,
+      studentName,
+      studentId,
+      className: `Class ${test.classId}`,
+      subject: subjectName,
+      testName,
+      testId: test.id,
+      classId: test.classId,
+      subjectId: test.subjectId,
+      totalQuestions: testQuestions.length,
+      attemptedQuestions: attemptedCount,
+      correctAnswers: correctCount,
+      wrongAnswers: wrongCount,
+      unansweredQuestions: unansweredCount,
+      totalMarks,
+      obtainedMarks,
+      percentage,
+      timeTaken: timeTakenSeconds,
+      timeTakenFormatted: formattedTimeTaken,
+      submissionDate: formattedDate,
+      submissionTime: formattedTime,
+      submittedAt: now.toISOString(),
+      isPassed,
+      studentAnswers: answers,
+      questionReviews,
+      syncedToCloud: false,
+    };
+
+    setMockSubmissions((prev) => [submissionPayload, ...prev.filter((s) => s.id !== resultId)]);
+
+    saveMockTestSubmission(submissionPayload).then((res) => {
+      if (res.syncedToCloud) {
+        setMockSubmissions((prev) =>
+          prev.map((s) => (s.id === resultId ? { ...s, syncedToCloud: true } : s))
+        );
+      }
+    }).catch((err) => {
+      console.warn('Background save to mockTestSubmissions failed:', err);
+    });
+
     // Update attempts count on the test
     setMockTests((prev) =>
       prev.map((t) => (t.id === test.id ? { ...t, attemptsCount: (t.attemptsCount || 0) + 1 } : t))
@@ -976,7 +1123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearOngoingAttempt();
     setActiveTest(null);
     setActiveResult(newResult);
-    showToast(`Test submitted! You scored ${obtainedMarks}/${totalMarks} (${percentage}%)`, 'success');
+    showToast(`Test submitted successfully! Score: ${obtainedMarks}/${totalMarks} (${percentage}%)`, 'success');
     return newResult;
   };
 
@@ -1057,7 +1204,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTestResult = (id: string) => {
     setTestResults((prev) => prev.filter((item) => item.id !== id));
+    setMockSubmissions((prev) => prev.filter((item) => item.id !== id));
+    deleteMockTestSubmission(id);
     showToast('Test result removed', 'info');
+  };
+
+  const deleteMockSubmission = async (id: string): Promise<boolean> => {
+    setMockSubmissions((prev) => prev.filter((s) => s.id !== id));
+    setTestResults((prev) => prev.filter((r) => r.id !== id));
+    const ok = await deleteMockTestSubmission(id);
+    showToast('মক টেস্ট সাবমিশন ডিলিট করা হয়েছে', 'info');
+    return ok;
+  };
+
+  const refreshMockSubmissions = async (): Promise<void> => {
+    const list = await fetchMockTestSubmissions();
+    if (list && list.length > 0) {
+      setMockSubmissions(list);
+    }
   };
 
   const registerStudent = (data: {
@@ -1128,6 +1292,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsUploadOpen,
         currentUser,
         loginAsAdmin,
+        loginAdminWithFirebase,
         loginAsStudent,
         loginQuickStudent,
         logout,
@@ -1202,6 +1367,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateMockTest,
         deleteMockTest,
         deleteTestResult,
+        mockSubmissions,
+        deleteMockSubmission,
+        refreshMockSubmissions,
         registerStudent,
         showToast,
         toasts,

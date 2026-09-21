@@ -19,11 +19,13 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Question, MockTest, QuestionOption } from '../../types';
+import { MockTestSubmissionsManager } from '../admin/MockTestSubmissionsManager';
 
 export const MockTestAdmin: React.FC = () => {
   const {
     questions,
     mockTests,
+    mockSubmissions,
     classes,
     subjects,
     students,
@@ -37,7 +39,7 @@ export const MockTestAdmin: React.FC = () => {
     showToast,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'tests' | 'questions' | 'offline_marks'>('tests');
+  const [activeTab, setActiveTab] = useState<'tests' | 'questions' | 'offline_marks' | 'submissions'>('tests');
 
   // Question Form State
   const [showQuestionModal, setShowQuestionModal] = useState<boolean>(false);
@@ -268,6 +270,15 @@ export const MockTestAdmin: React.FC = () => {
             }`}
           >
             অফলাইন নম্বর এন্ট্রি
+          </button>
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'submissions' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>সকল রেজাল্ট ও সাবমিশন ({mockSubmissions.length})</span>
           </button>
         </div>
       </div>
@@ -573,6 +584,13 @@ export const MockTestAdmin: React.FC = () => {
               নম্বর রেকর্ড সংরক্ষণ করুন (Save Marks)
             </button>
           </form>
+        </div>
+      )}
+
+      {/* TAB 4: ALL MOCK TEST SUBMISSIONS (FIREBASE FIRESTORE) */}
+      {activeTab === 'submissions' && (
+        <div className="pt-2">
+          <MockTestSubmissionsManager />
         </div>
       )}
 
